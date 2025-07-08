@@ -1,3 +1,6 @@
+I am currently rebuilding my code, when I tried to update my git repo, it deleted everything and download the initial code base. Git Desktop had some kind of error so I am recovering my code so most function do not work properply. I am hoping to have a fully working version uploaded soon.
+
+
 # Orange Pi 5 Plus Ubuntu Builder
 
 A comprehensive C application for building custom Ubuntu images and firmware for Orange Pi 5 Plus single-board computers with RK3588 SoC.
