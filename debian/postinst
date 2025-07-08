@@ -1,0 +1,35 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    configure)
+        # Create build directories
+        mkdir -p /tmp/kernel_build
+        mkdir -p /tmp/rootfs_build
+        
+        # Set up log file
+        touch /tmp/kernel_build.log
+        chmod 666 /tmp/kernel_build.log
+        
+        # Add user to necessary groups for building
+        if [ -n "$SUDO_USER" ]; then
+            usermod -a -G sudo "$SUDO_USER" 2>/dev/null || true
+        fi
+        
+        echo "Orange Pi Ubuntu Builder installed successfully!"
+        echo "Run 'sudo orangepi-ubuntu-builder' to start building custom Ubuntu images."
+        echo "Configuration files are in /etc/orangepi-ubuntu-builder/"
+        ;;
+        
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+        
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

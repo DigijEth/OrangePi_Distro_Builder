@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+case "$1" in
+    remove|purge)
+        # Clean up temporary build directories
+        rm -rf /tmp/kernel_build 2>/dev/null || true
+        rm -rf /tmp/rootfs_build 2>/dev/null || true
+        rm -f /tmp/kernel_build.log 2>/dev/null || true
+        
+        if [ "$1" = "purge" ]; then
+            # Remove configuration files on purge
+            rm -rf /etc/orangepi-ubuntu-builder 2>/dev/null || true
+        fi
+        ;;
+        
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+        
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

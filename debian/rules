@@ -1,0 +1,24 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	$(MAKE) all
+
+override_dh_auto_clean:
+	$(MAKE) clean
+
+override_dh_auto_install:
+	# Use the Makefile install target
+	$(MAKE) install DESTDIR=$(DESTDIR)
+	
+	# Install example configuration
+	echo "# Orange Pi Ubuntu Builder Configuration" > $(DESTDIR)/etc/orangepi-ubuntu-builder/builder.conf
+	echo "# Edit this file to customize build parameters" >> $(DESTDIR)/etc/orangepi-ubuntu-builder/builder.conf
+	echo "KERNEL_VERSION=6.1" >> $(DESTDIR)/etc/orangepi-ubuntu-builder/builder.conf
+	echo "BUILD_JOBS=4" >> $(DESTDIR)/etc/orangepi-ubuntu-builder/builder.conf
+	echo "ENABLE_GPU=1" >> $(DESTDIR)/etc/orangepi-ubuntu-builder/builder.conf

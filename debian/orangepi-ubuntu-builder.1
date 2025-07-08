@@ -1,0 +1,69 @@
+.TH ORANGEPI-UBUNTU-BUILDER 1 "July 2025" "orangepi-ubuntu-builder 2.0.0" "User Commands"
+.SH NAME
+orangepi-ubuntu-builder \- Orange Pi 5 Plus Custom Ubuntu Builder
+.SH SYNOPSIS
+.B orangepi-ubuntu-builder
+.SH DESCRIPTION
+.B orangepi-ubuntu-builder
+is a comprehensive tool for building custom Ubuntu images for Orange Pi 5 Plus single-board computers.
+
+The tool provides an interactive menu system that allows you to:
+.IP \(bu 2
+Build custom Linux kernels optimized for Orange Pi 5 Plus
+.IP \(bu 2
+Compile and install U-Boot bootloader
+.IP \(bu 2
+Create Ubuntu root filesystems using debootstrap
+.IP \(bu 2
+Install GPU drivers with Mali G610 support (Panfrost/Mesa)
+.IP \(bu 2
+Configure Vulkan and OpenCL support
+.IP \(bu 2
+Generate bootable SD card images
+.IP \(bu 2
+Manage build dependencies automatically
+
+.SH REQUIREMENTS
+This tool requires root privileges to function properly as it needs to:
+.IP \(bu 2
+Install system packages
+.IP \(bu 2
+Create and mount loop devices
+.IP \(bu 2
+Access chroot environments
+.IP \(bu 2
+Write to system directories
+
+.SH FILES
+.TP
+.I /etc/orangepi-ubuntu-builder/builder.conf
+Main configuration file
+.TP
+.I /etc/orangepi-ubuntu-builder/patches/
+Directory containing kernel and U-Boot patches
+.TP
+.I /tmp/kernel_build.log
+Build log file
+
+.SH EXAMPLES
+.TP
+Start the interactive builder:
+.B sudo orangepi-ubuntu-builder
+
+.SH AUTHOR
+Written by the Orange Pi Ubuntu Builder development team.
+
+.SH "REPORTING BUGS"
+Report bugs to: https://github.com/yourusername/orangepi-ubuntu-builder/issues
+
+.SH COPYRIGHT
+Copyright \(co 2025 Orange Pi Ubuntu Builder Team.
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+.br
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+.SH "SEE ALSO"
+.BR debootstrap (8),
+.BR make (1),
+.BR git (1)

@@ -1,0 +1,71 @@
+Source: orangepi-ubuntu-builder
+Section: utils
+Priority: optional
+Maintainer: Orange Pi Builder <builder@orangepi.org>
+Build-Depends: debhelper-compat (= 13), build-essential, gcc
+Standards-Version: 4.6.2
+Homepage: https://github.com/orangepi/orangepi-ubuntu-builder
+Vcs-Git: https://github.com/orangepi/orangepi-ubuntu-builder.git
+Vcs-Browser: https://github.com/orangepi/orangepi-ubuntu-builder
+
+Package: orangepi-ubuntu-builder
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, 
+         build-essential,
+         gcc-aarch64-linux-gnu,
+         g++-aarch64-linux-gnu,
+         libncurses-dev,
+         gawk,
+         flex,
+         bison,
+         openssl,
+         libssl-dev,
+         dkms,
+         libelf-dev,
+         libudev-dev,
+         libpci-dev,
+         libiberty-dev,
+         autoconf,
+         llvm,
+         git,
+         wget,
+         curl,
+         bc,
+         rsync,
+         kmod,
+         cpio,
+         python3,
+         python3-pip,
+         device-tree-compiler,
+         fakeroot,
+         debootstrap,
+         ubuntu-keyring,
+         mesa-opencl-icd,
+         vulkan-tools,
+         vulkan-utils,
+         libvulkan-dev,
+         ocl-icd-opencl-dev,
+         opencl-headers,
+         clinfo,
+         libegl1-mesa-dev,
+         libgles2-mesa-dev,
+         libgl1-mesa-dev,
+         libdrm-dev,
+         libgbm-dev,
+         libwayland-dev,
+         libx11-dev,
+         meson,
+         ninja-build
+Description: Orange Pi 5 Plus Custom Ubuntu Builder
+ A comprehensive tool for building custom Ubuntu images for Orange Pi 5 Plus
+ single-board computers. This package provides functionality to:
+ .
+  * Build custom Linux kernels optimized for Orange Pi 5 Plus
+  * Compile and install U-Boot bootloader
+  * Create Ubuntu root filesystems with debootstrap
+  * Install GPU drivers (Mali G610 with Panfrost/Mesa support)
+  * Generate bootable SD card images
+  * Manage build dependencies automatically
+ .
+ The tool supports interactive menu-driven operation and can build complete
+ Ubuntu systems from source with hardware-specific optimizations.

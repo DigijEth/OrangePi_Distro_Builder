@@ -1,0 +1,17 @@
+orangepi-ubuntu-builder (2.0.0-1) unstable; urgency=medium
+
+  * Initial release of Orange Pi 5 Plus Ubuntu Builder
+  * Features include:
+    - Custom kernel building with hardware optimization
+    - U-Boot bootloader compilation and installation
+    - Ubuntu rootfs creation with debootstrap
+    - Mali G610 GPU driver support (Panfrost/Mesa)
+    - Vulkan and OpenCL support
+    - Bootable image generation
+    - Interactive menu system
+    - Comprehensive dependency management
+  * Supports Orange Pi 5 Plus with RK3588 SoC
+  * Includes patches for Mali GPU acceleration
+  * Automated build process with error handling
+
+ -- Orange Pi Builder <builder@orangepi.org>  Mon, 08 Jul 2025 12:00:00 +0000
