@@ -118,18 +118,6 @@ make clean && make
 # Install system-wide (optional)
 sudo make install
 ```
-
-### Method 3: Create Custom Package
-```bash
-# Build your own .deb package
-./build-deb-simple.sh
-
-# Install the created package
-sudo dpkg -i orangepi-ubuntu-builder_*.deb
-```
-
-## Quick Start
-
 ### Basic Usage
 ```bash
 # Launch the builder with root privileges
