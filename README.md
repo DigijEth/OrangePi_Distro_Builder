@@ -94,10 +94,10 @@ mesa-opencl-icd vulkan-tools libvulkan-dev opencl-headers
 ### Method 1: Debian Package (Recommended)
 ```bash
 # Download the latest release
-wget https://github.com/orangepi/orangepi-ubuntu-builder/releases/download/v2.0.0/orangepi-ubuntu-builder_2.0.0-1_amd64.deb
+wget https://github.com/orangepi/builder/releases/download/v2.0.0/builder_2.0.0-1_amd64.deb
 
 # Install the package
-sudo dpkg -i orangepi-ubuntu-builder_2.0.0-1_amd64.deb
+sudo dpkg -i builder_2.0.0-1_amd64.deb
 
 # Fix any dependency issues
 sudo apt-get install -f
@@ -106,8 +106,8 @@ sudo apt-get install -f
 ### Method 2: Build from Source
 ```bash
 # Clone the repository
-git clone https://github.com/orangepi/orangepi-ubuntu-builder.git
-cd orangepi-ubuntu-builder
+git clone https://github.com/orangepi/builder.git
+cd builder
 
 # Install build dependencies
 sudo ./install_dependencies.sh
@@ -121,7 +121,7 @@ sudo make install
 ### Basic Usage
 ```bash
 # Launch the builder with root privileges
-sudo orangepi-ubuntu-builder
+sudo builder
 ```
 
 ### Menu Navigation
@@ -136,7 +136,7 @@ sudo orangepi-ubuntu-builder
 ### Quick Build Example
 ```bash
 # Start the application
-sudo orangepi-ubuntu-builder
+sudo builder
 
 # Select option 1 for "Full Build"
 # Choose your preferred configuration:
@@ -160,19 +160,19 @@ sudo orangepi-ubuntu-builder
 ### System Configuration
 ```bash
 # Global configuration:
-/etc/orangepi-ubuntu-builder/builder.conf
+/etc/builder/builder.conf
 
 # User configuration (per-build):
-~/.config/orangepi-ubuntu-builder/build.conf
+~/.config/builder/build.conf
 
 # Patch directories:
-/etc/orangepi-ubuntu-builder/patches/kernel/
-/etc/orangepi-ubuntu-builder/patches/uboot/
+/etc/builder/patches/kernel/
+/etc/builder/patches/uboot/
 ```
 
 ### Build Configuration File
 ```bash
-# Edit: /etc/orangepi-ubuntu-builder/builder.conf
+# Edit: /etc/builder/builder.conf
 
 # Kernel settings
 KERNEL_VERSION=6.1
@@ -297,7 +297,7 @@ vulkaninfo --summary
 
 ### Project Structure
 ```
-orangepi-ubuntu-builder/
+builder/
 ├── src/                       # Source code modules
 │   ├── auth.c/h              # Authentication and API access
 │   ├── dependencies.c/h      # Dependency management
@@ -320,8 +320,8 @@ orangepi-ubuntu-builder/
 ### Building from Source
 ```bash
 # Clone repository:
-git clone https://github.com/orangepi/orangepi-ubuntu-builder.git
-cd orangepi-ubuntu-builder
+git clone https://github.com/orangepi/builder.git
+cd builder
 
 # Install development dependencies:
 sudo apt install build-essential git
