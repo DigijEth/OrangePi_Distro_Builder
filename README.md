@@ -1,5 +1,7 @@
 I am rewritting the program in rust to make it more stable and offer a full CLI and desktop GUI. I will also be creating a live boot version of this application fully supporting ARM64 builds so the application can be booted from the orange pi via SD Card and the OS will be written directly to the nvme/emmc.
 
+Most, if not all the code was restored 
+
 # Orange Pi 5 Plus Ubuntu Builder
 
 A comprehensive C application for building custom Ubuntu images and firmware for Orange Pi 5 Plus single-board computers with RK3588 SoC.
