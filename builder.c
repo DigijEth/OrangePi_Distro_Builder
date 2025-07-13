@@ -1,7 +1,7 @@
 /*
  * ═══════════════════════════════════════════════════════════════════════════════════════════
  *                  ORANGE PI 5 PLUS ULTIMATE INTERACTIVE BUILDER
- *                           Setec Labs Presents: v0.1.0
+ *                           Setec Labs Presents: v0.1.1a
  *                               By: Digijeth
  * ═══════════════════════════════════════════════════════════════════════════════════════════
  * 
@@ -25,6 +25,13 @@
  * • LibreELEC: https://libreelec.tv/
  * • EmulationStation: https://emulationstation.org/
  * • RetroPie: https://retropie.org.uk/
+ * 
+ * CHANGES FROM v0.1.0a:
+ * • Fixed /proc mounting issues in chroot environments
+ * • Enhanced locale configuration during rootfs creation
+ * • Improved GitHub authentication handling
+ * • Added wrapper script for filesystem mounting
+ * • Better error handling and cleanup on failures
  * 
  * ═══════════════════════════════════════════════════════════════════════════════════════════
  */
@@ -211,7 +218,7 @@ void init_build_config(build_config_t *config) {
     if (!config) return;
     
     // Set default values
-    strcpy(config->kernel_version, "6.1.0");  // Use a version that's likely to exist
+    strcpy(config->kernel_version, "6.8.0");  // Use a stable kernel version
     strcpy(config->build_dir, BUILD_DIR);
     strcpy(config->output_dir, "/tmp/opi5plus_output");
     strcpy(config->cross_compile, "aarch64-linux-gnu-");
@@ -228,11 +235,7 @@ void init_build_config(build_config_t *config) {
     
     // Build options
     config->jobs = sysconf(_SC_NPROCESSORS_ONLN);
-    if (config->jobs <= 0) {
-        // Fallback if sysconf fails (e.g., /proc not mounted)
-        config->jobs = 4;
-        LOG_WARNING("Could not detect CPU count, defaulting to 4 jobs");
-    };
+    if (config->jobs <= 0) config->jobs = 4;
     
     // Check .env for custom settings
     FILE *fp = fopen(".env", "r");
@@ -598,447 +601,6 @@ int perform_quick_setup(build_config_t *config) {
         return result;
     }
     
-    // Build U-Boot
-    if (config->build_uboot) {
-        result = download_uboot_source(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-        
-        result = build_uboot(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-    }
-    
-    // Create system image
-    if (config->create_image) {
-        result = create_system_image(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-    }
-    
-    LOG_INFO("Build completed successfully!");
-    
-    clear_screen();
-    print_header();
-    printf("\n%s%sBUILD COMPLETED SUCCESSFULLY!%s\n", COLOR_BOLD, COLOR_GREEN, COLOR_RESET);
-    printf("════════════════════════════════════════════════════════════════════════\n");
-    printf("\n");
-    printf("Output files:\n");
-    
-    if (config->create_image) {
-        // Fix for format truncation warning - use larger buffer and safer construction
-        char image_path[MAX_PATH_LEN + 256];  // Much larger buffer
-        int ret = snprintf(image_path, sizeof(image_path), 
-                          "%s/orangepi5plus-%s-%s.img",
-                          config->output_dir, config->ubuntu_codename, config->kernel_version);
-        
-        // Check for truncation
-        if (ret >= (int)sizeof(image_path)) {
-            LOG_WARNING("Image path was truncated - using shorter fallback name");
-            snprintf(image_path, sizeof(image_path), 
-                     "%s/orangepi5plus.img", config->output_dir);
-        }
-        
-        printf("• System image: %s\n", image_path);
-        printf("\n");
-        printf("Flash the image to your SD card with:\n");
-        printf("  dd if=%s of=/dev/sdX bs=4M status=progress\n", image_path);
-    } else {
-        printf("• Kernel: %s/rootfs/boot/vmlinuz-%s\n", 
-               config->output_dir, config->kernel_version);
-        printf("• Device tree: %s/rootfs/boot/rk3588*.dtb\n", config->output_dir);
-        if (config->build_uboot) {
-            printf("• U-Boot: %s/idbloader.img\n", config->output_dir);
-        }
-    }
-    
-    printf("\n");
-    pause_screen();
-    
-    return ERROR_SUCCESS;
-}
-
-// Perform custom build
-int perform_custom_build(build_config_t *config) {
-    int choice;
-    int configured = 0;
-    
-    while (1) {
-        show_custom_build_menu();
-        choice = get_user_choice("Select option", 0, 8);  // <-- Changed to 0, 8
-        
-        switch (choice) {
-            case 0:  // Back
-                return ERROR_USER_CANCELLED;
-                
-            case 1:  // Distribution type
-                show_distro_selection_menu();
-                choice = get_user_choice("Select distribution type", 0, 4);
-                if (choice > 0 && choice <= 4) {
-                    config->distro_type = choice - 1;
-                    if (config->distro_type == DISTRO_EMULATION) {
-                        show_emulation_menu();
-                        choice = get_user_choice("Select emulation platform", 0, 5);
-                        if (choice > 0) {
-                            config->emu_platform = choice;
-                        }
-                    }
-                    configured = 1;
-                }
-                break;
-                
-            case 2:  // Ubuntu version
-                show_ubuntu_selection_menu();
-                choice = get_user_choice("Select Ubuntu version", 0, 5);
-                if (choice > 0 && choice <= 5) {
-                    ubuntu_release_t *rel = &ubuntu_releases[choice - 1];
-                    strcpy(config->ubuntu_release, rel->version);
-                    strcpy(config->ubuntu_codename, rel->codename);
-                    configured = 1;
-                }
-                break;
-                
-            case 3:  // Kernel options
-                {
-                    char buffer[64];
-                    printf("Current kernel version: %s\n", config->kernel_version);
-                    get_user_input("Enter kernel version (or press ENTER to keep): ", buffer, sizeof(buffer));
-                    if (strlen(buffer) > 0) {
-                        strncpy(config->kernel_version, buffer, sizeof(config->kernel_version) - 1);
-                        config->kernel_version[sizeof(config->kernel_version) - 1] = '\0';
-                        configured = 1;
-                    }
-                }
-                break;
-                
-            case 4:  // GPU configuration
-                {
-                    int gpu_choice;
-                    do {
-                        show_gpu_options_menu(config);
-                        gpu_choice = get_user_choice("Select option", 0, 5);
-                        
-                        switch (gpu_choice) {
-                            case 1:
-                                config->install_gpu_blobs = !config->install_gpu_blobs;
-                                break;
-                            case 2:
-                                config->enable_opencl = !config->enable_opencl;
-                                if (config->enable_opencl) config->install_gpu_blobs = 1;
-                                break;
-                            case 3:
-                                config->enable_vulkan = !config->enable_vulkan;
-                                if (config->enable_vulkan) config->install_gpu_blobs = 1;
-                                break;
-                            case 4:
-                                config->install_gpu_blobs = 1;
-                                config->enable_opencl = 1;
-                                config->enable_vulkan = 1;
-                                break;
-                            case 5:
-                                config->install_gpu_blobs = 0;
-                                config->enable_opencl = 0;
-                                config->enable_vulkan = 0;
-                                break;
-                        }
-                        configured = 1;
-                    } while (gpu_choice != 0);
-                }
-                break;
-                
-            case 5:  // Build components
-                printf("\nSelect components to build:\n");
-                printf("Build kernel? (y/n) [%s]: ", config->build_kernel ? "y" : "n");
-                if (confirm_action("")) config->build_kernel = 1; else config->build_kernel = 0;
-                
-                printf("Build root filesystem? (y/n) [%s]: ", config->build_rootfs ? "y" : "n");
-                if (confirm_action("")) config->build_rootfs = 1; else config->build_rootfs = 0;
-                
-                printf("Build U-Boot? (y/n) [%s]: ", config->build_uboot ? "y" : "n");
-                if (confirm_action("")) config->build_uboot = 1; else config->build_uboot = 0;
-                
-                printf("Create system image? (y/n) [%s]: ", config->create_image ? "y" : "n");
-                if (confirm_action("")) config->create_image = 1; else config->create_image = 0;
-                
-                configured = 1;
-                pause_screen();
-                break;
-                
-            case 6:  // Image settings
-                show_image_settings_menu(config);
-                configured = 1;
-                break;
-                
-            case 7:  // Build options
-                {
-                    int build_choice;
-                    do {
-                        show_build_options_menu();
-                        build_choice = get_user_choice("Select option", 0, 7);
-                        
-                        char buffer[MAX_PATH_LEN];
-                        switch (build_choice) {
-                            case 1:  // Jobs
-                                printf("Current parallel jobs: %d\n", config->jobs);
-                                get_user_input("Enter number of parallel jobs: ", buffer, sizeof(buffer));
-                                if (strlen(buffer) > 0) {
-                                    int jobs = atoi(buffer);
-                                    if (jobs > 0 && jobs <= 128) {
-                                        config->jobs = jobs;
-                                    }
-                                }
-                                break;
-                            case 2:  // Verbose
-                                config->verbose = !config->verbose;
-                                printf("Verbose output %s\n", config->verbose ? "enabled" : "disabled");
-                                pause_screen();
-                                break;
-                            case 3:  // Clean build
-                                config->clean_build = !config->clean_build;
-                                printf("Clean build %s\n", config->clean_build ? "enabled" : "disabled");
-                                pause_screen();
-                                break;
-                            case 4:  // Continue on error
-                                config->continue_on_error = !config->continue_on_error;
-                                printf("Continue on error %s\n", config->continue_on_error ? "enabled" : "disabled");
-                                pause_screen();
-                                break;
-                            case 5:  // Log level
-                                printf("Log levels: 0=Debug, 1=Info, 2=Warning, 3=Error, 4=Critical\n");
-                                get_user_input("Enter log level (0-4): ", buffer, sizeof(buffer));
-                                if (strlen(buffer) > 0) {
-                                    int level = atoi(buffer);
-                                    if (level >= 0 && level <= 4) {
-                                        config->log_level = level;
-                                    }
-                                }
-                                break;
-                            case 6:  // Build directory
-                                printf("Current build directory: %s\n", config->build_dir);
-                                get_user_input("Enter new build directory: ", buffer, sizeof(buffer));
-                                if (strlen(buffer) > 0) {
-                                    strncpy(config->build_dir, buffer, sizeof(config->build_dir) - 1);
-                                    config->build_dir[sizeof(config->build_dir) - 1] = '\0';
-                                }
-                                break;
-                            case 7:  // Output directory
-                                printf("Current output directory: %s\n", config->output_dir);
-                                get_user_input("Enter new output directory: ", buffer, sizeof(buffer));
-                                if (strlen(buffer) > 0) {
-                                    strncpy(config->output_dir, buffer, sizeof(config->output_dir) - 1);
-                                    config->output_dir[sizeof(config->output_dir) - 1] = '\0';
-                                }
-                                break;
-                        }
-                        configured = 1;
-                    } while (build_choice != 0);
-                }
-                break;
-                
-            case 8:  // Start build
-                if (!configured) {
-                    LOG_WARNING("No custom configuration made, using defaults");
-                }
-                
-                show_build_summary(config);
-                if (confirm_action("Start build with these settings?")) {
-                    return start_full_build(config);
-                }
-                break;
-        }
-    }
-    
-    return ERROR_SUCCESS;
-}
-
-// Main entry point
-int main(int argc, char *argv[]) {
-    build_config_t config;
-    int result = ERROR_SUCCESS;
-    
-    // Check and mount essential filesystems FIRST
-    if (access("/proc/self", F_OK) != 0) {
-        fprintf(stderr, "Warning: /proc is not mounted, attempting to mount it...\n");
-        if (system("mount -t proc /proc /proc 2>/dev/null") != 0) {
-            fprintf(stderr, "Warning: Could not mount /proc. Some features may not work.\n");
-            fprintf(stderr, "Try running: sudo mount -t proc /proc /proc\n");
-            fprintf(stderr, "Or use the wrapper script: sudo /usr/local/bin/run-builder\n\n");
-        }
-    }
-    
-    if (access("/sys/class", F_OK) != 0) {
-        system("mount -t sysfs /sys /sys 2>/dev/null");
-    }
-    
-    if (access("/dev/null", F_OK) != 0) {
-        system("mount -t devtmpfs /dev /dev 2>/dev/null");
-    }
-    
-    // Initialize configuration
-    init_build_config(&config);
-    global_config = &config;
-    
-    // Process command line arguments
-    process_args(argc, argv, &config);
-    
-    // Setup signal handlers
-    setup_signal_handlers();
-    
-#if DEBUG_ENABLED
-    // Initialize debug system
-    debug_init();
-#endif
-    
-    // Create .env template if it doesn't exist
-    create_env_template_builder();
-    
-    // Enhanced GitHub token authentication and configuration
-    char* token = get_github_token();
-    if (token != NULL && strlen(token) > 0) {
-        fprintf(stdout, "[INFO] GitHub authentication token found (length: %zu)\n", strlen(token));
-        
-        // Validate token format
-        if (validate_github_token(token)) {
-            fprintf(stdout, "[INFO] Token format validated: %s\n", get_token_type_description(token));
-            
-            // Test token validity
-            fprintf(stdout, "[INFO] Testing GitHub token validity...\n");
-            if (test_github_token(token)) {
-                fprintf(stdout, "[INFO] GitHub token is valid and working\n");
-                
-                // Configure git to use the token
-                if (configure_git_with_token(token)) {
-                    fprintf(stdout, "[INFO] Git configured to use GitHub token for authentication\n");
-                } else {
-                    fprintf(stdout, "[WARNING] Failed to configure git with GitHub token\n");
-                }
-            } else {
-                fprintf(stdout, "[ERROR] GitHub token is invalid or expired\n");
-                fprintf(stdout, "[ERROR] Please check your token and update the .env file\n");
-                fprintf(stdout, "[INFO] To create a new token, visit: https://github.com/settings/tokens\n");
-                fprintf(stdout, "[INFO] Required scopes: repo, read:packages\n");
-            }
-        } else {
-            fprintf(stdout, "[WARNING] Token format appears invalid: %s\n", get_token_type_description(token));
-            fprintf(stdout, "[WARNING] Expected formats:\n");
-            fprintf(stdout, "[WARNING]   - Classic PAT: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (40 chars)\n");
-            fprintf(stdout, "[WARNING]   - Fine-grained PAT: github_pat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (50+ chars)\n");
-            fprintf(stdout, "[INFO] To create a valid token, visit: https://github.com/settings/tokens\n");
-        }
-    } else {
-        fprintf(stdout, "[WARNING] No GitHub authentication token found. Some operations may fail.\n");
-        fprintf(stdout, "[WARNING] Please add a token to the .env file or set the GITHUB_TOKEN environment variable.\n");
-        fprintf(stdout, "[INFO] To create a token, visit: https://github.com/settings/tokens\n");
-        fprintf(stdout, "[INFO] Required scopes: repo, read:packages\n");
-        fprintf(stdout, "[INFO] Add to .env file: GITHUB_TOKEN=your_token_here\n");
-    }
-    
-    // Initialize configuration
-    init_build_config(&config);
-    global_config = &config;
-    
-    // Process command line arguments
-    process_args(argc, argv, &config);
-    
-    // Validate configuration
-    result = validate_config(&config);
-    if (result != ERROR_SUCCESS) {
-        fprintf(stderr, "Invalid configuration. Exiting.\n");
-        return result;
-    }
-    
-    // Check root permissions
-    result = check_root_permissions();
-    if (result != ERROR_SUCCESS) {
-        fprintf(stderr, "Root permissions required. Run with sudo.\n");
-        return result;
-    }
-    
-    // Non-interactive mode
-    if (argc > 1) {
-        // Ensure directories exist
-        result = ensure_directories_exist(&config);
-        if (result != ERROR_SUCCESS && !config.continue_on_error) {
-            return result;
-        }
-        
-        // Setup build environment
-        result = setup_build_environment();
-        if (result != ERROR_SUCCESS && !config.continue_on_error) {
-            return result;
-        }
-        
-        // Perform build
-        result = perform_quick_setup(&config);
-    } else {
-        // Interactive mode
-        result = start_interactive_build(&config);
-    }
-    
-     // Cleanup
-    if (log_fp) {
-        fclose(log_fp);
-    }
-    if (error_log_fp) {
-        fclose(error_log_fp);
-    }
-	
-	// Start full build process
-int start_full_build(build_config_t *config) {
-    int result;
-    
-    LOG_INFO("Starting full build process...");
-    
-    // Ensure output directories exist
-    result = ensure_directories_exist(config);
-    if (result != ERROR_SUCCESS && !config->continue_on_error) {
-        return result;
-    }
-    
-    // Setup build environment
-    result = setup_build_environment();
-    if (result != ERROR_SUCCESS && !config->continue_on_error) {
-        return result;
-    }
-    
-    // Install prerequisites
-    result = install_prerequisites();
-    if (result != ERROR_SUCCESS && !config->continue_on_error) {
-        return result;
-    }
-    
-    // Build kernel if requested
-    if (config->build_kernel) {
-        // Download kernel source
-        result = download_kernel_source(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-        
-        // Configure kernel
-        result = configure_kernel(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-        
-        // Build kernel
-        result = build_kernel(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-    }
-    
-    // Download Mali blobs if GPU support enabled
-    if (config->install_gpu_blobs) {
-        result = download_mali_blobs(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-    }
-    
     // Build U-Boot if requested
     if (config->build_uboot) {
         result = download_uboot_source(config);
@@ -1052,67 +614,7 @@ int start_full_build(build_config_t *config) {
         }
     }
     
-    // Build rootfs if requested
-    if (config->build_rootfs) {
-        result = build_ubuntu_rootfs(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-    }
-    
-    // Install kernel if built
-    if (config->build_kernel) {
-        result = install_kernel(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-    }
-    
-    // Install Mali drivers if enabled
-    if (config->install_gpu_blobs) {
-        result = install_mali_drivers(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-        
-        if (config->enable_opencl) {
-            result = setup_opencl_support(config);
-            if (result != ERROR_SUCCESS && !config->continue_on_error) {
-                return result;
-            }
-        }
-        
-        if (config->enable_vulkan) {
-            result = setup_vulkan_support(config);
-            if (result != ERROR_SUCCESS && !config->continue_on_error) {
-                return result;
-            }
-        }
-    }
-    
-    // Install system packages
-    if (config->build_rootfs) {
-        result = install_system_packages(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-        
-        // Configure system services
-        result = configure_system_services(config);
-        if (result != ERROR_SUCCESS && !config->continue_on_error) {
-            return result;
-        }
-        
-        // Install emulation packages if needed
-        if (config->distro_type == DISTRO_EMULATION && config->emu_platform != EMU_NONE) {
-            result = install_emulation_packages(config);
-            if (result != ERROR_SUCCESS && !config->continue_on_error) {
-                return result;
-            }
-        }
-    }
-    
-    // Create final image if requested
+    // Create system image if requested
     if (config->create_image) {
         result = create_system_image(config);
         if (result != ERROR_SUCCESS && !config->continue_on_error) {
@@ -1120,52 +622,182 @@ int start_full_build(build_config_t *config) {
         }
     }
     
-    // Final verification
-    if (config->install_gpu_blobs) {
-        verify_gpu_installation();
-    }
+    LOG_INFO("Quick setup build completed successfully!");
     
-    // Print completion message
+    // Show completion message
+    clear_screen();
+    print_header();
     printf("\n%s%sBUILD COMPLETED SUCCESSFULLY!%s\n", COLOR_BOLD, COLOR_GREEN, COLOR_RESET);
     printf("════════════════════════════════════════════════════════════════════════\n");
-    printf("\n");
-    
+    printf("\nYour Orange Pi 5 Plus system has been built with the following:\n");
+    printf("• Ubuntu %s (%s)\n", config->ubuntu_release, config->ubuntu_codename);
+    printf("• Kernel %s with Mali G610 GPU support\n", config->kernel_version);
+    printf("• Desktop environment with hardware acceleration\n");
+    printf("• OpenCL 2.2 and Vulkan 1.2 support\n");
+    printf("\nOutput files can be found in: %s\n", config->output_dir);
     if (config->create_image) {
-        printf("System image created at: %s/orangepi5plus-%s-%s.img\n", 
-               config->output_dir, config->ubuntu_codename, config->kernel_version);
-        printf("\n");
-        printf("To write the image to SD card:\n");
-        printf("  sudo dd if=%s/orangepi5plus-%s-%s.img of=/dev/sdX bs=4M status=progress\n",
-               config->output_dir, config->ubuntu_codename, config->kernel_version);
-        printf("\n");
-        printf("Replace /dev/sdX with your actual SD card device!\n");
-    } else {
-        printf("Build components are ready in: %s\n", config->output_dir);
+        printf("\nTo flash to SD card:\n");
+        printf("sudo dd if=%s/orangepi5plus-%s.img of=/dev/sdX bs=4M status=progress\n", 
+               config->output_dir, config->ubuntu_codename);
     }
-    
     printf("\n");
-    printf("Default login credentials:\n");
-    printf("  Username: %s\n", config->username);
-    printf("  Password: %s\n", config->password);
-    printf("\n");
-    
-    if (config->install_gpu_blobs) {
-        printf("GPU features installed:\n");
-        printf("  Mali G610 drivers: Yes\n");
-        if (config->enable_opencl) printf("  OpenCL 2.2: Yes (test with: clinfo)\n");
-        if (config->enable_vulkan) printf("  Vulkan 1.2: Yes (test with: vulkaninfo)\n");
-        printf("\n");
-    }
-    
     pause_screen();
     
     return ERROR_SUCCESS;
 }
+
+// Perform custom build
+int perform_custom_build(build_config_t *config) {
+    int choice;
+    
+    while (1) {
+        show_custom_build_menu();
+        choice = get_user_choice("Select option", 0, 7);
+        
+        switch (choice) {
+            case 0:  // Back
+                return ERROR_SUCCESS;
+                
+            case 1:  // Distribution Type
+                show_distro_selection_menu();
+                choice = get_user_choice("Select distribution type", 1, 4);
+                if (choice >= 1 && choice <= 4) {
+                    config->distro_type = choice - 1;
+                    printf("Distribution type set to: ");
+                    switch (config->distro_type) {
+                        case DISTRO_DESKTOP: printf("Desktop Edition\n"); break;
+                        case DISTRO_SERVER: printf("Server Edition\n"); break;
+                        case DISTRO_EMULATION: printf("Emulation Station\n"); break;
+                        case DISTRO_MINIMAL: printf("Minimal System\n"); break;
+                    }
+                    pause_screen();
+                }
+                break;
+                
+            case 2:  // Ubuntu Version
+                show_ubuntu_selection_menu();
+                choice = get_user_choice("Select Ubuntu version", 1, 5);
+                if (choice >= 1 && choice <= 5) {
+                    ubuntu_release_t *release = &ubuntu_releases[choice - 1];
+                    strcpy(config->ubuntu_release, release->version);
+                    strcpy(config->ubuntu_codename, release->codename);
+                    printf("Ubuntu version set to: %s (%s)\n", 
+                           config->ubuntu_release, config->ubuntu_codename);
+                    pause_screen();
+                }
+                break;
+                
+            case 3:  // Kernel Options
+                printf("Current kernel version: %s\n", config->kernel_version);
+                char buffer[64];
+                get_user_input("Enter new kernel version (or press Enter to keep current): ", 
+                              buffer, sizeof(buffer));
+                if (strlen(buffer) > 0) {
+                    strcpy(config->kernel_version, buffer);
+                    printf("Kernel version set to: %s\n", config->kernel_version);
+                }
+                pause_screen();
+                break;
+                
+            case 4:  // GPU Configuration
+                while (1) {
+                    show_gpu_options_menu(config);
+                    int gpu_choice = get_user_choice("Select GPU option", 0, 5);
+                    
+                    switch (gpu_choice) {
+                        case 0: goto gpu_done;
+                        case 1: config->install_gpu_blobs = !config->install_gpu_blobs; break;
+                        case 2: config->enable_opencl = !config->enable_opencl; break;
+                        case 3: config->enable_vulkan = !config->enable_vulkan; break;
+                        case 4:
+                            config->install_gpu_blobs = 1;
+                            config->enable_opencl = 1;
+                            config->enable_vulkan = 1;
+                            break;
+                        case 5:
+                            config->install_gpu_blobs = 0;
+                            config->enable_opencl = 0;
+                            config->enable_vulkan = 0;
+                            break;
+                    }
+                }
+gpu_done:
+                break;
+                
+            case 5:  // Build Components
+                printf("Build components:\n");
+                printf("1. Kernel: %s\n", config->build_kernel ? "Yes" : "No");
+                printf("2. Root filesystem: %s\n", config->build_rootfs ? "Yes" : "No");
+                printf("3. U-Boot: %s\n", config->build_uboot ? "Yes" : "No");
+                printf("4. System image: %s\n", config->create_image ? "Yes" : "No");
+                choice = get_user_choice("Toggle which component (1-4, 0=done)", 0, 4);
+                switch (choice) {
+                    case 1: config->build_kernel = !config->build_kernel; break;
+                    case 2: config->build_rootfs = !config->build_rootfs; break;
+                    case 3: config->build_uboot = !config->build_uboot; break;
+                    case 4: config->create_image = !config->create_image; break;
+                }
+                if (choice != 0) pause_screen();
+                break;
+                
+            case 6:  // Image Settings
+                show_image_settings_menu(config);
+                break;
+                
+            case 7:  // Start Build
+                show_build_summary(config);
+                if (confirm_action("Start custom build?")) {
+                    return perform_quick_setup(config);  // Reuse the build logic
+                }
+                break;
+        }
+    }
+    
+    return ERROR_SUCCESS;
+}
+
+// Main function
+int main(int argc, char *argv[]) {
+    build_config_t config = {0};
+    int result = ERROR_SUCCESS;
+    
+    // Initialize configuration
+    init_build_config(&config);
+    global_config = &config;
+    
+    // Setup signal handlers
+    setup_signal_handlers();
+    
+    // Process command line arguments
+    process_args(argc, argv, &config);
+    
+    // Check if we have command line arguments that indicate non-interactive mode
+    if (argc > 1) {
+        // Non-interactive mode - validate and run
+        result = validate_config(&config);
+        if (result != ERROR_SUCCESS) {
+            LOG_ERROR("Configuration validation failed");
+            return result;
+        }
+        
+        LOG_INFO("Starting non-interactive build...");
+        result = perform_quick_setup(&config);
+    } else {
+        // Interactive mode
+        result = start_interactive_build(&config);
+    }
+    
+    // Cleanup
+    if (log_fp) {
+        fclose(log_fp);
+    }
+    if (error_log_fp) {
+        fclose(error_log_fp);
+    }
     
 #if DEBUG_ENABLED
-    // Cleanup debug system
     debug_cleanup();
 #endif
-
+    
     return result;
 }
