@@ -854,7 +854,139 @@ int perform_custom_build(build_config_t *config) {
     return ERROR_SUCCESS;
 }
 
-// Start full build process
+// Main entry point
+int main(int argc, char *argv[]) {
+    build_config_t config;
+    int result = ERROR_SUCCESS;
+    
+    // Check and mount essential filesystems FIRST
+    if (access("/proc/self", F_OK) != 0) {
+        fprintf(stderr, "Warning: /proc is not mounted, attempting to mount it...\n");
+        if (system("mount -t proc /proc /proc 2>/dev/null") != 0) {
+            fprintf(stderr, "Warning: Could not mount /proc. Some features may not work.\n");
+            fprintf(stderr, "Try running: sudo mount -t proc /proc /proc\n");
+            fprintf(stderr, "Or use the wrapper script: sudo /usr/local/bin/run-builder\n\n");
+        }
+    }
+    
+    if (access("/sys/class", F_OK) != 0) {
+        system("mount -t sysfs /sys /sys 2>/dev/null");
+    }
+    
+    if (access("/dev/null", F_OK) != 0) {
+        system("mount -t devtmpfs /dev /dev 2>/dev/null");
+    }
+    
+    // Initialize configuration
+    init_build_config(&config);
+    global_config = &config;
+    
+    // Process command line arguments
+    process_args(argc, argv, &config);
+    
+    // Setup signal handlers
+    setup_signal_handlers();
+    
+#if DEBUG_ENABLED
+    // Initialize debug system
+    debug_init();
+#endif
+    
+    // Create .env template if it doesn't exist
+    create_env_template_builder();
+    
+    // Enhanced GitHub token authentication and configuration
+    char* token = get_github_token();
+    if (token != NULL && strlen(token) > 0) {
+        fprintf(stdout, "[INFO] GitHub authentication token found (length: %zu)\n", strlen(token));
+        
+        // Validate token format
+        if (validate_github_token(token)) {
+            fprintf(stdout, "[INFO] Token format validated: %s\n", get_token_type_description(token));
+            
+            // Test token validity
+            fprintf(stdout, "[INFO] Testing GitHub token validity...\n");
+            if (test_github_token(token)) {
+                fprintf(stdout, "[INFO] GitHub token is valid and working\n");
+                
+                // Configure git to use the token
+                if (configure_git_with_token(token)) {
+                    fprintf(stdout, "[INFO] Git configured to use GitHub token for authentication\n");
+                } else {
+                    fprintf(stdout, "[WARNING] Failed to configure git with GitHub token\n");
+                }
+            } else {
+                fprintf(stdout, "[ERROR] GitHub token is invalid or expired\n");
+                fprintf(stdout, "[ERROR] Please check your token and update the .env file\n");
+                fprintf(stdout, "[INFO] To create a new token, visit: https://github.com/settings/tokens\n");
+                fprintf(stdout, "[INFO] Required scopes: repo, read:packages\n");
+            }
+        } else {
+            fprintf(stdout, "[WARNING] Token format appears invalid: %s\n", get_token_type_description(token));
+            fprintf(stdout, "[WARNING] Expected formats:\n");
+            fprintf(stdout, "[WARNING]   - Classic PAT: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (40 chars)\n");
+            fprintf(stdout, "[WARNING]   - Fine-grained PAT: github_pat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (50+ chars)\n");
+            fprintf(stdout, "[INFO] To create a valid token, visit: https://github.com/settings/tokens\n");
+        }
+    } else {
+        fprintf(stdout, "[WARNING] No GitHub authentication token found. Some operations may fail.\n");
+        fprintf(stdout, "[WARNING] Please add a token to the .env file or set the GITHUB_TOKEN environment variable.\n");
+        fprintf(stdout, "[INFO] To create a token, visit: https://github.com/settings/tokens\n");
+        fprintf(stdout, "[INFO] Required scopes: repo, read:packages\n");
+        fprintf(stdout, "[INFO] Add to .env file: GITHUB_TOKEN=your_token_here\n");
+    }
+    
+    // Initialize configuration
+    init_build_config(&config);
+    global_config = &config;
+    
+    // Process command line arguments
+    process_args(argc, argv, &config);
+    
+    // Validate configuration
+    result = validate_config(&config);
+    if (result != ERROR_SUCCESS) {
+        fprintf(stderr, "Invalid configuration. Exiting.\n");
+        return result;
+    }
+    
+    // Check root permissions
+    result = check_root_permissions();
+    if (result != ERROR_SUCCESS) {
+        fprintf(stderr, "Root permissions required. Run with sudo.\n");
+        return result;
+    }
+    
+    // Non-interactive mode
+    if (argc > 1) {
+        // Ensure directories exist
+        result = ensure_directories_exist(&config);
+        if (result != ERROR_SUCCESS && !config.continue_on_error) {
+            return result;
+        }
+        
+        // Setup build environment
+        result = setup_build_environment();
+        if (result != ERROR_SUCCESS && !config.continue_on_error) {
+            return result;
+        }
+        
+        // Perform build
+        result = perform_quick_setup(&config);
+    } else {
+        // Interactive mode
+        result = start_interactive_build(&config);
+    }
+    
+     // Cleanup
+    if (log_fp) {
+        fclose(log_fp);
+    }
+    if (error_log_fp) {
+        fclose(error_log_fp);
+    }
+	
+	// Start full build process
 int start_full_build(build_config_t *config) {
     int result;
     
@@ -1029,131 +1161,6 @@ int start_full_build(build_config_t *config) {
     
     return ERROR_SUCCESS;
 }
-
-// Main entry point
-int main(int argc, char *argv[]) {
-    build_config_t config;
-    int result = ERROR_SUCCESS;
-    
-    // Check and mount essential filesystems FIRST
-    if (access("/proc/self", F_OK) != 0) {
-        fprintf(stderr, "Warning: /proc is not mounted, attempting to mount it...\n");
-        if (system("mount -t proc /proc /proc 2>/dev/null") != 0) {
-            fprintf(stderr, "Warning: Could not mount /proc. Some features may not work.\n");
-            fprintf(stderr, "Try running: sudo mount -t proc /proc /proc\n");
-            fprintf(stderr, "Or use the wrapper script: sudo /usr/local/bin/run-builder\n\n");
-        }
-    }
-    
-    if (access("/sys/class", F_OK) != 0) {
-        system("mount -t sysfs /sys /sys 2>/dev/null");
-    }
-    
-    if (access("/dev/null", F_OK) != 0) {
-        system("mount -t devtmpfs /dev /dev 2>/dev/null");
-    }
-    
-    // Initialize configuration
-    init_build_config(&config);
-    global_config = &config;
-    
-    // Process command line arguments
-    process_args(argc, argv, &config);
-    
-    // Setup signal handlers
-    setup_signal_handlers();
-    
-#if DEBUG_ENABLED
-    // Initialize debug system
-    debug_init();
-#endif
-    
-    // Create .env template if it doesn't exist
-    create_env_template_builder();
-    
-    // Enhanced GitHub token authentication and configuration
-    char* token = get_github_token();
-    if (token != NULL && strlen(token) > 0) {
-        fprintf(stdout, "[INFO] GitHub authentication token found (length: %zu)\n", strlen(token));
-        
-        // Validate token format
-        if (validate_github_token(token)) {
-            fprintf(stdout, "[INFO] Token format validated: %s\n", get_token_type_description(token));
-            
-            // Test token validity
-            fprintf(stdout, "[INFO] Testing GitHub token validity...\n");
-            if (test_github_token(token)) {
-                fprintf(stdout, "[INFO] GitHub token is valid and working\n");
-                
-                // Configure git to use the token
-                if (configure_git_with_token(token)) {
-                    fprintf(stdout, "[INFO] Git configured to use GitHub token for authentication\n");
-                } else {
-                    fprintf(stdout, "[WARNING] Failed to configure git with GitHub token\n");
-                }
-            } else {
-                fprintf(stdout, "[ERROR] GitHub token is invalid or expired\n");
-                fprintf(stdout, "[ERROR] Please check your token and update the .env file\n");
-                fprintf(stdout, "[INFO] To create a new token, visit: https://github.com/settings/tokens\n");
-                fprintf(stdout, "[INFO] Required scopes: repo, read:packages\n");
-            }
-        } else {
-            fprintf(stdout, "[WARNING] Token format appears invalid: %s\n", get_token_type_description(token));
-            fprintf(stdout, "[WARNING] Expected formats:\n");
-            fprintf(stdout, "[WARNING]   - Classic PAT: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (40 chars)\n");
-            fprintf(stdout, "[WARNING]   - Fine-grained PAT: github_pat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (50+ chars)\n");
-            fprintf(stdout, "[INFO] To create a valid token, visit: https://github.com/settings/tokens\n");
-        }
-    } else {
-        fprintf(stdout, "[WARNING] No GitHub authentication token found. Some operations may fail.\n");
-        fprintf(stdout, "[WARNING] Please add a token to the .env file or set the GITHUB_TOKEN environment variable.\n");
-        fprintf(stdout, "[INFO] To create a token, visit: https://github.com/settings/tokens\n");
-        fprintf(stdout, "[INFO] Required scopes: repo, read:packages\n");
-        fprintf(stdout, "[INFO] Add to .env file: GITHUB_TOKEN=your_token_here\n");
-    }
-    
-    // Validate configuration
-    result = validate_config(&config);
-    if (result != ERROR_SUCCESS) {
-        fprintf(stderr, "Invalid configuration. Exiting.\n");
-        return result;
-    }
-    
-    // Check root permissions
-    result = check_root_permissions();
-    if (result != ERROR_SUCCESS) {
-        fprintf(stderr, "Root permissions required. Run with sudo.\n");
-        return result;
-    }
-    
-    // Non-interactive mode
-    if (argc > 1) {
-        // Ensure directories exist
-        result = ensure_directories_exist(&config);
-        if (result != ERROR_SUCCESS && !config.continue_on_error) {
-            return result;
-        }
-        
-        // Setup build environment
-        result = setup_build_environment();
-        if (result != ERROR_SUCCESS && !config.continue_on_error) {
-            return result;
-        }
-        
-        // Perform build
-        result = perform_quick_setup(&config);
-    } else {
-        // Interactive mode
-        result = start_interactive_build(&config);
-    }
-    
-    // Cleanup
-    if (log_fp) {
-        fclose(log_fp);
-    }
-    if (error_log_fp) {
-        fclose(error_log_fp);
-    }
     
 #if DEBUG_ENABLED
     // Cleanup debug system
