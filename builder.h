@@ -1,9 +1,32 @@
 /*
- * builder.h - Main header file for Orange Pi 5 Plus Ultimate Interactive Builder
- * Version: 0.1.0a
+ * ═══════════════════════════════════════════════════════════════════════════════════════════
+ *                  ORANGE PI 5 PLUS ULTIMATE INTERACTIVE BUILDER
+ *                           Setec Labs Presents: v0.1.0
+ *                               By: Digijeth
+ * ═══════════════════════════════════════════════════════════════════════════════════════════
  * 
- * This header contains all shared type definitions, constants, and function
- * prototypes used across the different modules.
+ * LEGAL NOTICE:
+ * This software is provided by Setec Labs for legitimate purposes only. NO games, BIOS files,
+ * or copyrighted software will be installed. Setec Labs does not support piracy in any form.
+ * Users are responsible for complying with all applicable laws and regulations.
+ * 
+ * PROJECT FEATURES:
+ * • Interactive menu-driven interface for ease of use
+ * • Multiple Ubuntu versions (20.04 LTS through 25.04)
+ * • Full Mali G610 GPU support with hardware acceleration
+ * • Custom distributions: Desktop, Server, or Emulation-focused
+ * • LibreELEC, EmulationStation, and RetroPie integration options
+ * • Comprehensive error handling and recovery
+ * • Build progress tracking and logging
+ * 
+ * INTEGRATED PROJECTS:
+ * • Joshua-Riek Ubuntu Rockchip: https://github.com/Joshua-Riek/ubuntu-rockchip
+ * • JeffyCN Mali Drivers: https://github.com/JeffyCN/mirrors/raw/libmali/
+ * • LibreELEC: https://libreelec.tv/
+ * • EmulationStation: https://emulationstation.org/
+ * • RetroPie: https://retropie.org.uk/
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════════════════
  */
 
 #ifndef BUILDER_H
@@ -281,6 +304,7 @@ int verify_gpu_installation(void);
 int integrate_mali_into_kernel(build_config_t *config);
 
 // Function prototypes from builder.c (main build logic)
+int start_full_build(build_config_t *config);
 int start_interactive_build(build_config_t *config);
 int perform_quick_setup(build_config_t *config);
 int perform_custom_build(build_config_t *config);
