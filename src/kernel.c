@@ -1,18 +1,42 @@
 /*
- * kernel.c - Kernel and system image operations for Orange Pi 5 Plus Ultimate Interactive Builder
- * Version: 0.1.0a
+ * ═══════════════════════════════════════════════════════════════════════════════════════════
+ *                  ORANGE PI 5 PLUS ULTIMATE INTERACTIVE BUILDER
+ *                           Setec Labs Presents: v0.1.0
+ *                               By: Digijeth
+ * ═══════════════════════════════════════════════════════════════════════════════════════════
  * 
- * This file contains functions for kernel compilation, rootfs creation,
- * U-Boot building, and system image generation.
+ * LEGAL NOTICE:
+ * This software is provided by Setec Labs for legitimate purposes only. NO games, BIOS files,
+ * or copyrighted software will be installed. Setec Labs does not support piracy in any form.
+ * Users are responsible for complying with all applicable laws and regulations.
+ * 
+ * PROJECT FEATURES:
+ * • Interactive menu-driven interface for ease of use
+ * • Multiple Ubuntu versions (20.04 LTS through 25.04)
+ * • Full Mali G610 GPU support with hardware acceleration
+ * • Custom distributions: Desktop, Server, or Emulation-focused
+ * • LibreELEC, EmulationStation, and RetroPie integration options
+ * • Comprehensive error handling and recovery
+ * • Build progress tracking and logging
+ * 
+ * INTEGRATED PROJECTS:
+ * • Joshua-Riek Ubuntu Rockchip: https://github.com/Joshua-Riek/ubuntu-rockchip
+ * • JeffyCN Mali Drivers: https://github.com/JeffyCN/mirrors/raw/libmali/
+ * • LibreELEC: https://libreelec.tv/
+ * • EmulationStation: https://emulationstation.org/
+ * • RetroPie: https://retropie.org.uk/
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════════════════
  */
 
-#include "builder.h"
+#include "../builder.h"
 
 // Download kernel source
 int download_kernel_source(build_config_t *config) {
     char cmd[MAX_CMD_LEN];
     char source_dir[MAX_PATH_LEN];
     error_context_t error_ctx = {0};
+    char* auth_url;
     
     if (!config) {
         LOG_ERROR("Configuration is NULL");
@@ -42,18 +66,58 @@ int download_kernel_source(build_config_t *config) {
     // First approach: Try the Orange Pi specific repository
     LOG_INFO("Trying to download Orange Pi kernel source...");
     
-    snprintf(cmd, sizeof(cmd), 
-             "git clone --depth 1 https://github.com/orangepi-xunlong/linux.git -b orange-pi-5.10-rk3588 linux_temp");
+// For Orange Pi repository, try different authentication methods
+    const char* orangepi_urls[] = {
+        "https://github.com/orangepi-xunlong/linux-orangepi.git",
+        "https://github.com/rockchip-linux/kernel.git",
+        NULL
+    };
     
-    if (execute_command_with_retry(cmd, 1, 2) == 0) {
+    int success = 0;
+    for (int i = 0; orangepi_urls[i] != NULL && !success; i++) {
+        auth_url = add_github_token_to_url(orangepi_urls[i]);
+        
+        // Try with depth 1 first for faster clone
+        snprintf(cmd, sizeof(cmd), 
+                 "git clone --depth 1 \"%s\" -b orange-pi-5.10-rk3588 linux_temp 2>&1", auth_url);
+        
+        LOG_INFO("Attempting to clone from:");
+        LOG_INFO(orangepi_urls[i]);
+        
+        if (execute_command_with_retry(cmd, 1, 2) == 0) {
+            success = 1;
+        } else {
+            // Try without branch specification
+            snprintf(cmd, sizeof(cmd), 
+                     "git clone --depth 1 \"%s\" linux_temp 2>&1", auth_url);
+            
+            if (execute_command_with_retry(cmd, 1, 1) == 0) {
+                success = 1;
+            }
+        }
+        
+        if (!success) {
+            execute_command_safe("rm -rf linux_temp", 0, &error_ctx);
+        }
+    }
+    
+    if (success) {
         LOG_INFO("Successfully downloaded Orange Pi kernel source");
         
-        // Move the contents to the final location
-        snprintf(cmd, sizeof(cmd), "cp -r linux_temp/* %s/ && rm -rf linux_temp", source_dir);
-        execute_command_safe(cmd, 0, &error_ctx);
-        
-        LOG_INFO("Orange Pi kernel source prepared successfully");
-        return ERROR_SUCCESS;
+        // Check if linux_temp exists and has content
+        if (access("linux_temp", F_OK) == 0) {
+            // Move the contents to the final location
+            snprintf(cmd, sizeof(cmd), "mv linux_temp/* %s/ 2>/dev/null && mv linux_temp/.* %s/ 2>/dev/null || true", source_dir, source_dir);
+            execute_command_safe(cmd, 0, &error_ctx);
+            
+            // Clean up temp directory
+            execute_command_safe("rm -rf linux_temp", 0, &error_ctx);
+            
+            LOG_INFO("Orange Pi kernel source prepared successfully");
+            return ERROR_SUCCESS;
+        } else {
+            LOG_ERROR("linux_temp directory not found after clone");
+        }
     }
     
     LOG_WARNING("Could not download Orange Pi kernel source, trying Rockchip source...");
@@ -62,8 +126,9 @@ int download_kernel_source(build_config_t *config) {
     execute_command_safe("rm -rf linux_temp", 0, &error_ctx);
     
     // Second approach: Try standard Rockchip kernel
+    auth_url = add_github_token_to_url("https://github.com/rockchip-linux/kernel.git");
     snprintf(cmd, sizeof(cmd), 
-             "git clone --depth 1 https://github.com/rockchip-linux/kernel.git -b develop-5.10 linux_temp");
+             "git clone --depth 1 %s -b develop-5.10 linux_temp", auth_url);
     
     if (execute_command_with_retry(cmd, 1, 2) == 0) {
         LOG_INFO("Successfully downloaded Rockchip kernel source");
@@ -83,8 +148,9 @@ int download_kernel_source(build_config_t *config) {
             LOG_WARNING("Could not change to device tree directory, might need manual configuration");
         } else {
             // Download Orange Pi 5 Plus device tree file
+            auth_url = add_github_token_to_url("https://raw.githubusercontent.com/orangepi-xunlong/linux-orangepi/orange-pi-5.10-rk3588/arch/arm64/boot/dts/rockchip/rk3588-orangepi-5-plus.dts");
             snprintf(cmd, sizeof(cmd), 
-                     "wget -O rk3588-orangepi-5-plus.dts https://raw.githubusercontent.com/orangepi-xunlong/linux-orangepi/orange-pi-5.10-rk3588/arch/arm64/boot/dts/rockchip/rk3588-orangepi-5-plus.dts");
+                     "wget -O rk3588-orangepi-5-plus.dts \"%s\"", auth_url);
             
             if (execute_command_with_retry(cmd, 1, 3) != 0) {
                 LOG_WARNING("Could not download Orange Pi 5 Plus device tree, board might not be fully supported");
@@ -109,10 +175,11 @@ int download_kernel_source(build_config_t *config) {
     // Third approach: Get mainline kernel and add Rockchip patches
     LOG_WARNING("Could not download Rockchip kernel, falling back to mainline with patches...");
     
+    auth_url = add_github_token_to_url("https://github.com/torvalds/linux.git");
     snprintf(cmd, sizeof(cmd),
-             "git clone --depth 1 https://github.com/torvalds/linux.git -b v%s linux_temp || "
-             "git clone --depth 1 https://github.com/torvalds/linux.git linux_temp",
-             config->kernel_version);
+             "git clone --depth 1 %s -b v%s linux_temp || "
+             "git clone --depth 1 %s linux_temp",
+             auth_url, config->kernel_version, auth_url);
     
     if (execute_command_with_retry(cmd, 1, 2) == 0) {
         LOG_INFO("Successfully downloaded mainline kernel source");
@@ -141,9 +208,10 @@ int download_kernel_source(build_config_t *config) {
         };
         
         for (int i = 0; patch_sources[i] != NULL; i++) {
+            auth_url = add_github_token_to_url(patch_sources[i]);
             snprintf(cmd, sizeof(cmd), 
-                     "cd rockchip_patches && wget -r -np -nd -A '*.patch' %s/",
-                     patch_sources[i]);
+                     "cd rockchip_patches && wget -r -np -nd -A '*.patch' \"%s/\"",
+                     auth_url);
             
             execute_command_with_retry(cmd, 1, 2);
         }
@@ -182,13 +250,14 @@ int download_kernel_source(build_config_t *config) {
 // Download Ubuntu Rockchip patches
 int download_ubuntu_rockchip_patches(void) {
     char cmd[MAX_CMD_LEN];
+    char* auth_url;
     
     LOG_INFO("Downloading Ubuntu Rockchip project components...");
     
     // Clone Ubuntu Rockchip repository
+    auth_url = add_github_token_to_url("https://github.com/Joshua-Riek/ubuntu-rockchip.git");
     snprintf(cmd, sizeof(cmd),
-             "git clone --depth 1 "
-             "https://github.com/Joshua-Riek/ubuntu-rockchip.git ubuntu-rockchip");
+             "git clone --depth 1 %s ubuntu-rockchip", auth_url);
     
     if (execute_command_with_retry(cmd, 1, 2) != 0) {
         LOG_WARNING("Failed to download Ubuntu Rockchip project components");
@@ -474,24 +543,25 @@ int download_uboot_source(build_config_t *config) {
     char cmd[MAX_CMD_LEN];
     char uboot_dir[MAX_PATH_LEN];
     error_context_t error_ctx = {0};
+    char* auth_url;
     
     LOG_INFO("Downloading U-Boot source for RK3588...");
     
     snprintf(uboot_dir, sizeof(uboot_dir), "%s/u-boot", config->build_dir);
     
     // Clone U-Boot with Rockchip support
+    auth_url = add_github_token_to_url("https://github.com/u-boot/u-boot.git");
     snprintf(cmd, sizeof(cmd),
-             "git clone --depth 1 --branch v2024.01-rc4 "
-             "https://github.com/u-boot/u-boot.git %s",
-             uboot_dir);
+             "git clone --depth 1 --branch v2024.01-rc4 %s %s",
+             auth_url, uboot_dir);
     
     if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
         LOG_WARNING("Failed to clone mainline U-Boot, trying Rockchip fork...");
         
+        auth_url = add_github_token_to_url("https://github.com/rockchip-linux/u-boot.git");
         snprintf(cmd, sizeof(cmd),
-                 "git clone --depth 1 "
-                 "https://github.com/rockchip-linux/u-boot.git %s",
-                 uboot_dir);
+                 "git clone --depth 1 %s %s",
+                 auth_url, uboot_dir);
         
         if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
             LOG_ERROR("Failed to download U-Boot source");
@@ -501,19 +571,18 @@ int download_uboot_source(build_config_t *config) {
     
     // Download ARM Trusted Firmware
     LOG_INFO("Downloading ARM Trusted Firmware...");
+    auth_url = add_github_token_to_url("https://github.com/ARM-software/arm-trusted-firmware.git");
     snprintf(cmd, sizeof(cmd),
-             "git clone --depth 1 "
-             "https://github.com/ARM-software/arm-trusted-firmware.git "
-             "%s/arm-trusted-firmware",
-             config->build_dir);
+             "git clone --depth 1 %s %s/arm-trusted-firmware",
+             auth_url, config->build_dir);
     execute_command_safe(cmd, 1, &error_ctx);
     
     // Download Rockchip binary blobs
     LOG_INFO("Downloading Rockchip firmware blobs...");
+    auth_url = add_github_token_to_url("https://github.com/rockchip-linux/rkbin.git");
     snprintf(cmd, sizeof(cmd),
-             "git clone --depth 1 "
-             "https://github.com/rockchip-linux/rkbin.git %s/rkbin",
-             config->build_dir);
+             "git clone --depth 1 %s %s/rkbin",
+             auth_url, config->build_dir);
     execute_command_safe(cmd, 1, &error_ctx);
     
     LOG_INFO("U-Boot source downloaded successfully");
@@ -625,10 +694,13 @@ int build_ubuntu_rootfs(build_config_t *config) {
         }
     }
     
+    // Suppress Python warnings for the entire process
+    setenv("PYTHONWARNINGS", "ignore", 1);
+    
     // Run debootstrap first stage
     LOG_INFO("Running debootstrap first stage...");
     snprintf(cmd, sizeof(cmd),
-             "debootstrap --arch=arm64 --foreign --include=wget,ca-certificates "
+             "debootstrap --arch=arm64 --foreign --include=wget,ca-certificates,locales "
              "%s %s http://ports.ubuntu.com/ubuntu-ports",
              config->ubuntu_codename, rootfs_dir);
     
@@ -648,9 +720,24 @@ int build_ubuntu_rootfs(build_config_t *config) {
     }
     
     // Copy qemu static for arm64 emulation
+    LOG_INFO("Setting up ARM64 emulation...");
     snprintf(cmd, sizeof(cmd),
              "cp /usr/bin/qemu-aarch64-static %s/usr/bin/",
              rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    // Mount essential filesystems for chroot
+    LOG_INFO("Mounting essential filesystems for chroot environment...");
+    snprintf(cmd, sizeof(cmd), "mount -t proc /proc %s/proc", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "mount -t sysfs /sys %s/sys", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "mount -o bind /dev %s/dev", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "mount -o bind /dev/pts %s/dev/pts", rootfs_dir);
     execute_command_safe(cmd, 0, &error_ctx);
     
     // Run debootstrap second stage
@@ -661,8 +748,31 @@ int build_ubuntu_rootfs(build_config_t *config) {
     
     if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
         LOG_ERROR("Failed to run debootstrap second stage");
-        return ERROR_INSTALLATION_FAILED;
+        goto cleanup_mounts;
     }
+    
+    // Configure locales IMMEDIATELY after debootstrap
+    LOG_INFO("Configuring locales...");
+    
+    // Create locale.gen file
+    snprintf(cmd, sizeof(cmd), "echo 'en_US.UTF-8 UTF-8' > %s/etc/locale.gen", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    // Generate locales
+    snprintf(cmd, sizeof(cmd), "chroot %s locale-gen", rootfs_dir);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Set default locale
+    snprintf(cmd, sizeof(cmd), "echo 'LANG=en_US.UTF-8' > %s/etc/default/locale", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    // Also set locale environment for subsequent commands
+    snprintf(cmd, sizeof(cmd), 
+             "echo 'export LANG=en_US.UTF-8\n"
+             "export LANGUAGE=en_US:en\n"
+             "export LC_ALL=en_US.UTF-8' >> %s/etc/environment",
+             rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
     
     // Configure apt sources
     LOG_INFO("Configuring package sources...");
@@ -686,15 +796,52 @@ int build_ubuntu_rootfs(build_config_t *config) {
         execute_command_safe(cmd, 0, &error_ctx);
     }
     
-    // Update package database in chroot
+    // Update package database in chroot with locale set
     LOG_INFO("Updating package database...");
     snprintf(cmd, sizeof(cmd),
-             "chroot %s apt update",
+             "chroot %s /bin/bash -c 'export LANG=en_US.UTF-8; export LC_ALL=en_US.UTF-8; apt update'",
              rootfs_dir);
     execute_command_safe(cmd, 1, &error_ctx);
     
+    // First, ensure locale package is properly installed and configured
+    LOG_INFO("Ensuring locale system is properly configured...");
+    snprintf(cmd, sizeof(cmd),
+             "chroot %s /bin/bash -c 'export DEBIAN_FRONTEND=noninteractive; "
+             "apt-get install -y locales language-pack-en'",
+             rootfs_dir);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Reconfigure locales to be absolutely sure
+    snprintf(cmd, sizeof(cmd),
+             "chroot %s /bin/bash -c 'export DEBIAN_FRONTEND=noninteractive; "
+             "locale-gen en_US.UTF-8; update-locale LANG=en_US.UTF-8'",
+             rootfs_dir);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Create a wrapper script for locale-aware apt operations
+    FILE *apt_wrapper = fopen("/tmp/apt-wrapper.sh", "w");
+    if (apt_wrapper) {
+        fprintf(apt_wrapper,
+                "#!/bin/bash\n"
+                "export LANG=en_US.UTF-8\n"
+                "export LANGUAGE=en_US:en\n"
+                "export LC_ALL=en_US.UTF-8\n"
+                "export LC_CTYPE=en_US.UTF-8\n"
+                "export LC_MESSAGES=en_US.UTF-8\n"
+                "export DEBIAN_FRONTEND=noninteractive\n"
+                "export PYTHONWARNINGS=ignore\n"
+                "exec \"$@\"\n");
+        fclose(apt_wrapper);
+        
+        snprintf(cmd, sizeof(cmd), "cp /tmp/apt-wrapper.sh %s/usr/local/bin/apt-wrapper", rootfs_dir);
+        execute_command_safe(cmd, 0, &error_ctx);
+        
+        snprintf(cmd, sizeof(cmd), "chmod +x %s/usr/local/bin/apt-wrapper", rootfs_dir);
+        execute_command_safe(cmd, 0, &error_ctx);
+    }
+    
     // Install base packages based on distribution type
-    const char *base_packages = "ubuntu-minimal init systemd";
+    const char *base_packages = "ubuntu-minimal init systemd sudo";
     const char *extra_packages = "";
     
     switch (config->distro_type) {
@@ -716,14 +863,31 @@ int build_ubuntu_rootfs(build_config_t *config) {
     
     LOG_INFO("Installing base system packages...");
     snprintf(cmd, sizeof(cmd),
-             "chroot %s apt install -y %s %s",
+             "chroot %s /usr/local/bin/apt-wrapper apt-get install -y %s %s",
              rootfs_dir, base_packages, extra_packages);
     execute_command_safe(cmd, 1, &error_ctx);
     
     // Configure hostname
+    LOG_INFO("Configuring hostname...");
     snprintf(cmd, sizeof(cmd), "echo '%s' > %s/etc/hostname",
              config->hostname, rootfs_dir);
     execute_command_safe(cmd, 0, &error_ctx);
+    
+    // Create hosts file
+    FILE *hosts_file = fopen("/tmp/hosts", "w");
+    if (hosts_file) {
+        fprintf(hosts_file,
+                "127.0.0.1       localhost\n"
+                "127.0.1.1       %s\n"
+                "::1             localhost ip6-localhost ip6-loopback\n"
+                "ff02::1         ip6-allnodes\n"
+                "ff02::2         ip6-allrouters\n",
+                config->hostname);
+        fclose(hosts_file);
+        
+        snprintf(cmd, sizeof(cmd), "cp /tmp/hosts %s/etc/hosts", rootfs_dir);
+        execute_command_safe(cmd, 0, &error_ctx);
+    }
     
     // Create user
     LOG_INFO("Creating user account...");
@@ -738,11 +902,53 @@ int build_ubuntu_rootfs(build_config_t *config) {
              config->username, config->password, rootfs_dir);
     execute_command_safe(cmd, 0, &error_ctx);
     
-    // Clean up
+    // Enable sudo for user
+    snprintf(cmd, sizeof(cmd),
+             "echo '%s ALL=(ALL) ALL' > %s/etc/sudoers.d/%s",
+             config->username, rootfs_dir, config->username);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "chmod 0440 %s/etc/sudoers.d/%s",
+             rootfs_dir, config->username);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    // Clean up qemu binary
+    LOG_INFO("Cleaning up emulation files...");
     snprintf(cmd, sizeof(cmd), "rm -f %s/usr/bin/qemu-aarch64-static", rootfs_dir);
     execute_command_safe(cmd, 0, &error_ctx);
     
+    // Success - now unmount filesystems
     LOG_INFO("Ubuntu root filesystem created successfully");
+    
+cleanup_mounts:
+    // Cleanup - unmount filesystems in reverse order
+    LOG_INFO("Unmounting chroot filesystems...");
+    
+    // Kill any processes still using the chroot
+    snprintf(cmd, sizeof(cmd), "fuser -km %s || true", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    // Give processes time to exit
+    sleep(1);
+    
+    // Unmount in reverse order
+    snprintf(cmd, sizeof(cmd), "umount %s/dev/pts || true", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "umount %s/dev || true", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "umount %s/sys || true", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "umount %s/proc || true", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    // If there was an error during rootfs creation, return it
+    if (execute_command_safe("true", 0, &error_ctx) != 0) {
+        return ERROR_INSTALLATION_FAILED;
+    }
+    
     return ERROR_SUCCESS;
 }
 
@@ -894,16 +1100,47 @@ int install_system_packages(build_config_t *config) {
         return ERROR_FILE_NOT_FOUND;
     }
     
+    // Mount filesystems if not already mounted
+    LOG_INFO("Ensuring filesystems are mounted...");
+    snprintf(cmd, sizeof(cmd), "mountpoint -q %s/proc || mount -t proc /proc %s/proc", 
+             rootfs_dir, rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "mountpoint -q %s/sys || mount -t sysfs /sys %s/sys", 
+             rootfs_dir, rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "mountpoint -q %s/dev || mount -o bind /dev %s/dev", 
+             rootfs_dir, rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "mountpoint -q %s/dev/pts || mount -o bind /dev/pts %s/dev/pts", 
+             rootfs_dir, rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    // Set environment variables to suppress warnings
+    setenv("PYTHONWARNINGS", "ignore", 1);
+    
+    // Use the apt-wrapper if it exists, otherwise create locale environment
+    char apt_command[256];
+    if (access("/usr/local/bin/apt-wrapper", F_OK) == 0) {
+        strcpy(apt_command, "/usr/local/bin/apt-wrapper apt-get");
+    } else {
+        strcpy(apt_command, "/bin/bash -c 'export LANG=en_US.UTF-8; export LC_ALL=en_US.UTF-8; "
+                           "export LC_CTYPE=en_US.UTF-8; export LC_MESSAGES=en_US.UTF-8; "
+                           "export DEBIAN_FRONTEND=noninteractive; apt-get'");
+    }
+    
     // Common packages for all distributions
     const char *common_packages = 
         "linux-firmware wireless-tools wpasupplicant "
         "network-manager usbutils pciutils i2c-tools "
         "htop nano vim curl wget git sudo locales "
-        "software-properties-common dbus-x11";
+        "software-properties-common dbus-x11 language-pack-en";
     
     snprintf(cmd, sizeof(cmd),
-             "chroot %s apt install -y %s",
-             rootfs_dir, common_packages);
+             "chroot %s %s install -y %s",
+             rootfs_dir, apt_command, common_packages);
     execute_command_safe(cmd, 1, &error_ctx);
     
     // Distribution-specific packages
@@ -911,20 +1148,20 @@ int install_system_packages(build_config_t *config) {
         case DISTRO_DESKTOP:
             LOG_INFO("Installing desktop packages...");
             snprintf(cmd, sizeof(cmd),
-                     "chroot %s apt install -y "
+                     "chroot %s %s install -y "
                      "gnome-shell gdm3 gnome-terminal firefox "
                      "gnome-tweaks gnome-system-monitor",
-                     rootfs_dir);
+                     rootfs_dir, apt_command);
             execute_command_safe(cmd, 1, &error_ctx);
             break;
             
         case DISTRO_SERVER:
             LOG_INFO("Installing server packages...");
             snprintf(cmd, sizeof(cmd),
-                     "chroot %s apt install -y "
+                     "chroot %s %s install -y "
                      "openssh-server fail2ban ufw "
                      "docker.io docker-compose",
-                     rootfs_dir);
+                     rootfs_dir, apt_command);
             execute_command_safe(cmd, 1, &error_ctx);
             break;
             
@@ -941,18 +1178,32 @@ int install_system_packages(build_config_t *config) {
     if (config->install_gpu_blobs) {
         LOG_INFO("Installing GPU support packages...");
         snprintf(cmd, sizeof(cmd),
-                 "chroot %s apt install -y "
+                 "chroot %s %s install -y "
                  "mesa-utils glmark2-es2 vulkan-tools",
-                 rootfs_dir);
+                 rootfs_dir, apt_command);
         execute_command_safe(cmd, 1, &error_ctx);
     }
     
-    // Configure locales
-    LOG_INFO("Configuring locales...");
+    // Final locale configuration to ensure everything is set
+    LOG_INFO("Finalizing locale configuration...");
     snprintf(cmd, sizeof(cmd),
-             "chroot %s locale-gen en_US.UTF-8",
+             "chroot %s /bin/bash -c 'locale-gen en_US.UTF-8 && update-locale LANG=en_US.UTF-8'",
              rootfs_dir);
     execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Unmount filesystems
+    LOG_INFO("Unmounting filesystems...");
+    snprintf(cmd, sizeof(cmd), "umount %s/dev/pts || true", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "umount %s/dev || true", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "umount %s/sys || true", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "umount %s/proc || true", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
     
     LOG_INFO("System packages installed successfully");
     return ERROR_SUCCESS;
@@ -1110,11 +1361,13 @@ int setup_libreelec(build_config_t *config) {
     LOG_WARNING("LibreELEC is a complete OS - this will prepare the build environment");
     
     char cmd[MAX_CMD_LEN];
+    char* auth_url;
     
     // Clone LibreELEC source
+    auth_url = add_github_token_to_url("https://github.com/LibreELEC/LibreELEC.tv.git");
     snprintf(cmd, sizeof(cmd), 
-             "cd %s && git clone --depth 1 https://github.com/LibreELEC/LibreELEC.tv.git libreelec",
-             config->build_dir);
+             "cd %s && git clone --depth 1 %s libreelec",
+             config->build_dir, auth_url);
     
     if (execute_command_safe(cmd, 1, NULL) != 0) {
         LOG_ERROR("Failed to clone LibreELEC source");
@@ -1143,13 +1396,15 @@ int setup_emulationstation(build_config_t *config) {
     
     char cmd[MAX_CMD_LEN];
     char es_dir[MAX_PATH_LEN];
+    char* auth_url;
     
     snprintf(es_dir, sizeof(es_dir), "%s/emulationstation", config->build_dir);
     
     // Clone EmulationStation
+    auth_url = add_github_token_to_url("https://github.com/RetroPie/EmulationStation.git");
     snprintf(cmd, sizeof(cmd), 
-             "git clone --recursive https://github.com/RetroPie/EmulationStation.git %s",
-             es_dir);
+             "git clone --recursive %s %s",
+             auth_url, es_dir);
     
     if (execute_command_safe(cmd, 1, NULL) != 0) {
         LOG_ERROR("Failed to clone EmulationStation");
@@ -1189,13 +1444,15 @@ int setup_retropie(build_config_t *config) {
     
     char cmd[MAX_CMD_LEN];
     char retropie_dir[MAX_PATH_LEN];
+    char* auth_url;
     
     snprintf(retropie_dir, sizeof(retropie_dir), "%s/RetroPie-Setup", config->build_dir);
     
     // Clone RetroPie-Setup
+    auth_url = add_github_token_to_url("https://github.com/RetroPie/RetroPie-Setup.git");
     snprintf(cmd, sizeof(cmd), 
-             "git clone --depth 1 https://github.com/RetroPie/RetroPie-Setup.git %s",
-             retropie_dir);
+             "git clone --depth 1 %s %s",
+             auth_url, retropie_dir);
     
     if (execute_command_safe(cmd, 1, NULL) != 0) {
         LOG_ERROR("Failed to clone RetroPie-Setup");
