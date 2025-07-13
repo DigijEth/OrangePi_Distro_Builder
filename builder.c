@@ -1,8 +1,7 @@
 /*
  * ═══════════════════════════════════════════════════════════════════════════════════════════
  *                  ORANGE PI 5 PLUS ULTIMATE INTERACTIVE BUILDER
- *                        Setec Labs Presents: Orange-Pi Builder v0.1.0
- *                               By: Digijeth
+ *                           Setec Labs Edition v3.0.0
  * ═══════════════════════════════════════════════════════════════════════════════════════════
  * 
  * LEGAL NOTICE:
@@ -45,7 +44,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-#define VERSION "0.1.0"
+#define VERSION "0.1.0a"
 #define BUILD_DIR "/tmp/opi5plus_build"
 #define LOG_FILE "/tmp/opi5plus_build.log"
 #define ERROR_LOG_FILE "/tmp/opi5plus_build_errors.log"
@@ -264,12 +263,12 @@ void show_custom_build_menu(void);
 void show_distro_selection_menu(void);
 void show_emulation_menu(void);
 void show_ubuntu_selection_menu(void);
-void show_gpu_options_menu(build_config_t *config);  // Fixed prototype
+void show_gpu_options_menu(build_config_t *config);
 void show_build_options_menu(void);
 void show_advanced_menu(void);
 void show_help_menu(void);
 void show_build_progress(const char *stage, int percent);
-void show_build_summary(build_config_t *config);  // Fixed prototype
+void show_build_summary(build_config_t *config);
 int confirm_action(const char *message);
 void setup_signal_handlers(void);
 void cleanup_on_signal(int signal);
@@ -324,8 +323,7 @@ void print_header(void) {
     printf("%s%s", COLOR_BOLD, COLOR_CYAN);
     printf("╔═══════════════════════════════════════════════════════════════════════════════╗\n");
     printf("║           ORANGE PI 5 PLUS ULTIMATE INTERACTIVE BUILDER v%s              ║\n", VERSION);
-    printf("║                   Setec Labs Presents: Orange-Pi Builder                      ║\n");
-    printf("║                              By: Digijeth                                     ║\n");
+    printf("║                         Setec Labs Edition                                    ║\n");
     printf("╚═══════════════════════════════════════════════════════════════════════════════╝\n");
     printf("%s", COLOR_RESET);
 }
@@ -584,7 +582,7 @@ void show_ubuntu_selection_menu(void) {
     printf("\n");
     
     int i;
-    for (i = 0; strlen(ubuntu_releases[i].version) > 0; i++) {  // Check for empty string instead of NULL
+    for (i = 0; strlen(ubuntu_releases[i].version) > 0; i++) {
         ubuntu_release_t *rel = &ubuntu_releases[i];
         const char *type = rel->is_lts ? "LTS" : "Regular";
         const char *status = rel->is_supported ? "Supported" : "Preview";
@@ -636,6 +634,108 @@ void show_gpu_options_menu(build_config_t *config) {
     printf("\n");
     printf("════════════════════════════════════════════════════════════════════════\n");
     printf("\n");
+}
+
+// Show build options menu
+void show_build_options_menu(void) {
+    clear_screen();
+    print_header();
+    
+    printf("\n%s%sBUILD OPTIONS%s\n", COLOR_BOLD, COLOR_GREEN, COLOR_RESET);
+    printf("════════════════════════════════════════════════════════════════════════\n");
+    printf("\n");
+    printf("Configure build settings:\n");
+    printf("\n");
+    printf("  %s1.%s Parallel Jobs        - Current: %d\n", COLOR_CYAN, COLOR_RESET, 
+           global_config ? global_config->jobs : 4);
+    printf("  %s2.%s Verbose Output       - Current: %s\n", COLOR_CYAN, COLOR_RESET,
+           global_config && global_config->verbose ? "Enabled" : "Disabled");
+    printf("  %s3.%s Clean Build          - Current: %s\n", COLOR_CYAN, COLOR_RESET,
+           global_config && global_config->clean_build ? "Yes" : "No");
+    printf("  %s4.%s Continue on Error    - Current: %s\n", COLOR_CYAN, COLOR_RESET,
+           global_config && global_config->continue_on_error ? "Yes" : "No");
+    printf("  %s5.%s Log Level            - Current: ", COLOR_CYAN, COLOR_RESET);
+    
+    if (global_config) {
+        switch (global_config->log_level) {
+            case LOG_LEVEL_DEBUG: printf("Debug\n"); break;
+            case LOG_LEVEL_INFO: printf("Info\n"); break;
+            case LOG_LEVEL_WARNING: printf("Warning\n"); break;
+            case LOG_LEVEL_ERROR: printf("Error\n"); break;
+            case LOG_LEVEL_CRITICAL: printf("Critical\n"); break;
+        }
+    } else {
+        printf("Info\n");
+    }
+    
+    printf("  %s6.%s Build Directory      - Current: %s\n", COLOR_CYAN, COLOR_RESET,
+           global_config ? global_config->build_dir : BUILD_DIR);
+    printf("  %s7.%s Output Directory     - Current: %s\n", COLOR_CYAN, COLOR_RESET,
+           global_config ? global_config->output_dir : "./output");
+    printf("\n");
+    printf("  %s0.%s Back\n", COLOR_CYAN, COLOR_RESET);
+    printf("\n");
+    printf("════════════════════════════════════════════════════════════════════════\n");
+    printf("\n");
+}
+
+// Show advanced menu
+void show_advanced_menu(void) {
+    clear_screen();
+    print_header();
+    
+    printf("\n%s%sADVANCED OPTIONS%s\n", COLOR_BOLD, COLOR_GREEN, COLOR_RESET);
+    printf("════════════════════════════════════════════════════════════════════════\n");
+    printf("\n");
+    printf("Advanced configuration options:\n");
+    printf("\n");
+    printf("  %s1.%s Kernel Configuration  - Manually edit kernel config\n", COLOR_CYAN, COLOR_RESET);
+    printf("  %s2.%s Boot Parameters       - Configure kernel boot args\n", COLOR_CYAN, COLOR_RESET);
+    printf("  %s3.%s Device Tree           - Custom device tree options\n", COLOR_CYAN, COLOR_RESET);
+    printf("  %s4.%s Overclocking         - CPU/GPU frequency settings\n", COLOR_CYAN, COLOR_RESET);
+    printf("  %s5.%s Network Config        - Pre-configure networking\n", COLOR_CYAN, COLOR_RESET);
+    printf("  %s6.%s Package Selection     - Custom package lists\n", COLOR_CYAN, COLOR_RESET);
+    printf("  %s7.%s Partition Layout     - Custom disk partitioning\n", COLOR_CYAN, COLOR_RESET);
+    printf("  %s8.%s Post-Install Script  - Add custom scripts\n", COLOR_CYAN, COLOR_RESET);
+    printf("\n");
+    printf("  %s0.%s Back\n", COLOR_CYAN, COLOR_RESET);
+    printf("\n");
+    printf("════════════════════════════════════════════════════════════════════════\n");
+    printf("\n");
+}
+
+// Show help menu
+void show_help_menu(void) {
+    clear_screen();
+    print_header();
+    
+    printf("\n%s%sHELP & DOCUMENTATION%s\n", COLOR_BOLD, COLOR_GREEN, COLOR_RESET);
+    printf("════════════════════════════════════════════════════════════════════════\n");
+    printf("\n");
+    printf("%sQuick Start Guide:%s\n", COLOR_YELLOW, COLOR_RESET);
+    printf("1. Choose 'Quick Setup' for a standard desktop build\n");
+    printf("2. Or select 'Custom Build' for advanced options\n");
+    printf("3. Follow the prompts to configure your build\n");
+    printf("4. The builder will download and compile everything\n");
+    printf("\n");
+    printf("%sDistribution Types:%s\n", COLOR_YELLOW, COLOR_RESET);
+    printf("• Desktop: Full GUI with GNOME desktop\n");
+    printf("• Server: Minimal installation for servers\n");
+    printf("• Emulation: Optimized for retro gaming (NO ROMs included)\n");
+    printf("• Minimal: Base system only\n");
+    printf("\n");
+    printf("%sGPU Support:%s\n", COLOR_YELLOW, COLOR_RESET);
+    printf("• Mali G610 drivers are included\n");
+    printf("• OpenCL 2.2 for compute workloads\n");
+    printf("• Vulkan 1.2 for modern graphics\n");
+    printf("\n");
+    printf("%sTroubleshooting:%s\n", COLOR_YELLOW, COLOR_RESET);
+    printf("• Check logs in: %s\n", LOG_FILE);
+    printf("• Error logs in: %s\n", ERROR_LOG_FILE);
+    printf("• Ensure at least 15GB free disk space\n");
+    printf("• Run with sudo for root permissions\n");
+    printf("\n");
+    pause_screen();
 }
 
 // Show build progress
@@ -979,7 +1079,7 @@ ubuntu_release_t* find_ubuntu_release(const char *version_or_codename) {
     
     if (!version_or_codename) return NULL;
     
-    for (i = 0; strlen(ubuntu_releases[i].version) > 0; i++) {  // Check for empty string instead of NULL
+    for (i = 0; strlen(ubuntu_releases[i].version) > 0; i++) {
         if (strcmp(ubuntu_releases[i].version, version_or_codename) == 0 ||
             strcmp(ubuntu_releases[i].codename, version_or_codename) == 0) {
             return &ubuntu_releases[i];
@@ -987,6 +1087,250 @@ ubuntu_release_t* find_ubuntu_release(const char *version_or_codename) {
     }
     
     return NULL;
+}
+
+// Validate configuration
+int validate_config(build_config_t *config) {
+    if (!config) {
+        LOG_ERROR("Configuration is NULL");
+        return ERROR_UNKNOWN;
+    }
+    
+    LOG_DEBUG("Validating build configuration...");
+    
+    // Validate Ubuntu release
+    if (strlen(config->ubuntu_release) == 0) {
+        LOG_ERROR("No Ubuntu release specified");
+        return ERROR_UNKNOWN;
+    }
+    
+    ubuntu_release_t *release = find_ubuntu_release(config->ubuntu_release);
+    if (!release) {
+        char msg[256];
+        snprintf(msg, sizeof(msg), "Invalid Ubuntu release: %s", config->ubuntu_release);
+        LOG_ERROR(msg);
+        return ERROR_UNKNOWN;
+    }
+    
+    // Validate kernel version
+    if (strlen(config->kernel_version) < 3) {
+        LOG_ERROR("Invalid kernel version");
+        return ERROR_UNKNOWN;
+    }
+    
+    // Validate paths
+    if (strlen(config->build_dir) == 0) {
+        LOG_ERROR("Build directory not specified");
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    if (strlen(config->output_dir) == 0) {
+        LOG_ERROR("Output directory not specified");
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    // Validate build options
+    if (config->jobs < 1 || config->jobs > 128) {
+        LOG_WARNING("Invalid job count, resetting to default");
+        config->jobs = sysconf(_SC_NPROCESSORS_ONLN);
+        if (config->jobs <= 0) config->jobs = 4;
+    }
+    
+    // Validate image size
+    int image_size = atoi(config->image_size);
+    if (image_size < 4096) {
+        LOG_WARNING("Image size too small, setting to 8192 MB");
+        strcpy(config->image_size, "8192");
+    }
+    
+    // GPU options validation
+    if (config->enable_opencl && !config->install_gpu_blobs) {
+        LOG_WARNING("OpenCL enabled but GPU drivers disabled, enabling GPU drivers");
+        config->install_gpu_blobs = 1;
+    }
+    
+    if (config->enable_vulkan && !config->install_gpu_blobs) {
+        LOG_WARNING("Vulkan enabled but GPU drivers disabled, enabling GPU drivers");
+        config->install_gpu_blobs = 1;
+    }
+    
+    LOG_DEBUG("Configuration validation completed");
+    return ERROR_SUCCESS;
+}
+
+// Check dependencies
+int check_dependencies(void) {
+    LOG_DEBUG("Checking system dependencies...");
+    
+    const char *required_tools[] = {
+        "git", "make", "gcc", "wget", "curl", "bc", "debootstrap", 
+        "device-tree-compiler", "u-boot-tools", NULL
+    };
+    
+    int missing = 0;
+    
+    for (int i = 0; required_tools[i] != NULL; i++) {
+        char cmd[128];
+        snprintf(cmd, sizeof(cmd), "which %s >/dev/null 2>&1", required_tools[i]);
+        if (system(cmd) != 0) {
+            char msg[128];
+            snprintf(msg, sizeof(msg), "Required tool missing: %s", required_tools[i]);
+            LOG_WARNING(msg);
+            missing++;
+        }
+    }
+    
+    if (missing > 0) {
+        char msg[256];
+        snprintf(msg, sizeof(msg), "%d required tools are missing. They will be installed automatically.", missing);
+        LOG_INFO(msg);
+    }
+    
+    LOG_DEBUG("Dependency check completed");
+    return ERROR_SUCCESS;
+}
+
+// Setup build environment
+int setup_build_environment(void) {
+    error_context_t error_ctx = {0};
+    
+    LOG_INFO("Setting up build environment...");
+    
+    // Check disk space (15GB minimum)
+    int space_result = check_disk_space("/tmp", 15000);
+    if (space_result != ERROR_SUCCESS) {
+        if (global_config && !global_config->continue_on_error) {
+            return space_result;
+        }
+        LOG_WARNING("Continuing despite insufficient disk space warning");
+    }
+    
+    // Create build directory
+    if (create_directory_safe(BUILD_DIR, &error_ctx) != 0) {
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    // Open log files
+    log_fp = fopen(LOG_FILE, "a");
+    if (!log_fp) {
+        LOG_WARNING("Could not open main log file, continuing without file logging");
+    } else {
+        LOG_DEBUG("Main log file opened successfully");
+    }
+    
+    error_log_fp = fopen(ERROR_LOG_FILE, "a");
+    if (!error_log_fp) {
+        LOG_WARNING("Could not open error log file");
+    } else {
+        LOG_DEBUG("Error log file opened successfully");
+    }
+    
+    // Update package lists
+    LOG_INFO("Updating package lists...");
+    if (execute_command_with_retry("apt update", 1, 3) != 0) {
+        error_ctx.code = ERROR_NETWORK_FAILURE;
+        strncpy(error_ctx.message, "Failed to update package lists after retries", MAX_ERROR_MSG - 1);
+        log_error_context(&error_ctx);
+        if (global_config && !global_config->continue_on_error) {
+            return ERROR_NETWORK_FAILURE;
+        }
+        LOG_WARNING("Continuing despite package update failure");
+    }
+    
+    LOG_INFO("Build environment setup completed successfully");
+    return ERROR_SUCCESS;
+}
+
+// Install prerequisites
+int install_prerequisites(void) {
+    LOG_INFO("Installing build prerequisites...");
+    
+    const char *packages[] = {
+        // Basic build tools
+        "build-essential",
+        "gcc-aarch64-linux-gnu",
+        "g++-aarch64-linux-gnu",
+        "libncurses-dev",
+        "gawk",
+        "flex",
+        "bison",
+        "openssl",
+        "libssl-dev",
+        "dkms",
+        "libelf-dev",
+        "libudev-dev",
+        "libpci-dev",
+        "libiberty-dev",
+        "autoconf",
+        "llvm",
+        // Additional tools
+        "git",
+        "wget",
+        "curl",
+        "bc",
+        "rsync",
+        "kmod",
+        "cpio",
+        "python3",
+        "python3-pip",
+        "device-tree-compiler",
+        // Ubuntu kernel build dependencies
+        "fakeroot",
+        "kernel-package",
+        "u-boot-tools",
+        // Mali GPU and OpenCL/Vulkan support
+        "mesa-opencl-icd",
+        "vulkan-tools",
+        "vulkan-utils",
+        "vulkan-validationlayers",
+        "libvulkan-dev",
+        "ocl-icd-opencl-dev",
+        "opencl-headers",
+        "clinfo",
+        // Media and hardware acceleration
+        "va-driver-all",
+        "vdpau-driver-all",
+        "mesa-va-drivers",
+        "mesa-vdpau-drivers",
+        // Development libraries
+        "libegl1-mesa-dev",
+        "libgles2-mesa-dev",
+        "libgl1-mesa-dev",
+        "libdrm-dev",
+        "libgbm-dev",
+        "libwayland-dev",
+        "libx11-dev",
+        "meson",
+        "ninja-build",
+        // For rootfs creation
+        "debootstrap",
+        "qemu-user-static",
+        "parted",
+        "dosfstools",
+        "e2fsprogs",
+        NULL
+    };
+    
+    char cmd[MAX_CMD_LEN * 2];
+    int i;
+    
+    // Install all packages at once
+    strcpy(cmd, "DEBIAN_FRONTEND=noninteractive apt install -y");
+    for (i = 0; packages[i] != NULL; i++) {
+        strcat(cmd, " ");
+        strcat(cmd, packages[i]);
+    }
+    
+    if (execute_command_with_retry(cmd, 1, 2) != 0) {
+        error_context_t error_ctx = {0};
+        error_ctx.code = ERROR_DEPENDENCY_MISSING;
+        strncpy(error_ctx.message, "Failed to install prerequisites after retries", MAX_ERROR_MSG - 1);
+        log_error_context(&error_ctx);
+        return ERROR_DEPENDENCY_MISSING;
+    }
+    
+    LOG_INFO("Prerequisites installed successfully");
+    return ERROR_SUCCESS;
 }
 
 // Install emulation packages
@@ -1155,6 +1499,1174 @@ int setup_retropie(build_config_t *config) {
     return ERROR_SUCCESS;
 }
 
+// Download kernel source
+int download_kernel_source(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    char source_dir[MAX_PATH_LEN];
+    error_context_t error_ctx = {0};
+    
+    if (!config) {
+        LOG_ERROR("Configuration is NULL");
+        return ERROR_UNKNOWN;
+    }
+    
+    LOG_INFO("Downloading kernel source...");
+    
+    snprintf(source_dir, sizeof(source_dir), "%s/linux", config->build_dir);
+    
+    // Change to build directory
+    if (chdir(config->build_dir) != 0) {
+        LOG_ERROR("Failed to change to build directory");
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    // Clone Ubuntu Rockchip kernel source with Mali GPU support
+    LOG_INFO("Downloading Ubuntu Rockchip kernel with Orange Pi support...");
+    snprintf(cmd, sizeof(cmd), 
+             "git clone --depth 1 --branch ubuntu-rockchip-6.8-opi5 "
+             "https://github.com/Joshua-Riek/linux-rockchip.git linux");
+    
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_WARNING("Failed to clone Joshua-Riek Ubuntu Rockchip kernel, trying alternatives...");
+        
+        // Try other available branches
+        const char *alternative_branches[] = {
+            "ubuntu-rockchip-6.8",
+            "ubuntu-rockchip-6.1", 
+            "ubuntu-rockchip",
+            NULL
+        };
+        
+        int success = 0;
+        int i;
+        for (i = 0; alternative_branches[i] != NULL && !success; i++) {
+            char alt_cmd[MAX_CMD_LEN];
+            snprintf(alt_cmd, sizeof(alt_cmd),
+                     "git clone --depth 1 --branch %s "
+                     "https://github.com/Joshua-Riek/linux-rockchip.git linux",
+                     alternative_branches[i]);
+            
+            if (execute_command_safe(alt_cmd, 1, &error_ctx) == 0) {
+                success = 1;
+                char success_msg[256];
+                snprintf(success_msg, sizeof(success_msg), 
+                         "Successfully cloned using branch: %s", alternative_branches[i]);
+                LOG_INFO(success_msg);
+                break;
+            }
+        }
+        
+        if (!success) {
+            LOG_WARNING("Failed to clone Ubuntu Rockchip kernel, trying mainline...");
+            
+            // Try latest stable kernel
+            snprintf(cmd, sizeof(cmd),
+                     "git clone --depth 1 --branch v%s "
+                     "https://github.com/torvalds/linux.git linux",
+                     config->kernel_version);
+            
+            if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+                LOG_ERROR("Failed to download kernel from all sources");
+                return ERROR_NETWORK_FAILURE;
+            }
+        }
+    }
+    
+    // Verify the source was downloaded
+    if (access(source_dir, F_OK) != 0) {
+        LOG_ERROR("Kernel source directory not found after download");
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    LOG_INFO("Kernel source downloaded successfully");
+    return ERROR_SUCCESS;
+}
+
+// Download Ubuntu Rockchip patches
+int download_ubuntu_rockchip_patches(void) {
+    char cmd[MAX_CMD_LEN];
+    
+    LOG_INFO("Downloading Ubuntu Rockchip project components...");
+    
+    // Clone Ubuntu Rockchip repository
+    snprintf(cmd, sizeof(cmd),
+             "git clone --depth 1 "
+             "https://github.com/Joshua-Riek/ubuntu-rockchip.git ubuntu-rockchip");
+    
+    if (execute_command_with_retry(cmd, 1, 2) != 0) {
+        LOG_WARNING("Failed to download Ubuntu Rockchip project components");
+        return ERROR_SUCCESS; // Non-critical
+    }
+    
+    LOG_INFO("Ubuntu Rockchip components downloaded");
+    return ERROR_SUCCESS;
+}
+
+// Download Mali blobs
+int download_mali_blobs(build_config_t *config) {
+    error_context_t error_ctx = {0};
+    int i;
+    
+    LOG_INFO("Downloading Mali G610 GPU drivers and firmware...");
+    
+    // Create Mali directory
+    if (create_directory_safe("/tmp/mali_install", &error_ctx) != 0) {
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    if (chdir("/tmp/mali_install") != 0) {
+        LOG_ERROR("Failed to change to Mali install directory");
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    // Download all Mali drivers
+    for (i = 0; strlen(mali_drivers[i].url) > 0; i++) {
+        mali_driver_t *driver = &mali_drivers[i];
+        
+        // Skip optional drivers based on config
+        if (!config->enable_vulkan && strstr(driver->description, "Vulkan")) {
+            LOG_INFO("Skipping Vulkan driver (disabled)");
+            continue;
+        }
+        
+        char msg[256];
+        snprintf(msg, sizeof(msg), "Downloading %s...", driver->description);
+        LOG_INFO(msg);
+        
+        char cmd[MAX_CMD_LEN];
+        snprintf(cmd, sizeof(cmd), "wget -O %s \"%s\"", driver->filename, driver->url);
+        
+        if (execute_command_with_retry(cmd, 1, 3) != 0) {
+            if (driver->required) {
+                LOG_ERROR("Failed to download required Mali driver");
+                return ERROR_GPU_DRIVER_FAILED;
+            } else {
+                LOG_WARNING("Failed to download optional Mali driver");
+            }
+        }
+    }
+    
+    LOG_INFO("Mali GPU drivers downloaded successfully");
+    return ERROR_SUCCESS;
+}
+
+// Install Mali drivers
+int install_mali_drivers(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    error_context_t error_ctx = {0};
+    
+    LOG_INFO("Installing Mali G610 GPU drivers...");
+    
+    if (!config->install_gpu_blobs) {
+        LOG_INFO("GPU driver installation skipped (disabled in config)");
+        return ERROR_SUCCESS;
+    }
+    
+    // Create necessary directories
+    const char *mali_dirs[] = {
+        "/usr/lib/aarch64-linux-gnu/mali",
+        "/lib/firmware/mali",
+        "/etc/OpenCL/vendors",
+        "/usr/share/vulkan/icd.d",
+        NULL
+    };
+    
+    for (int i = 0; mali_dirs[i] != NULL; i++) {
+        if (create_directory_safe(mali_dirs[i], &error_ctx) != 0) {
+            LOG_WARNING("Failed to create Mali directory");
+        }
+    }
+    
+    // Install firmware
+    LOG_INFO("Installing Mali CSF firmware...");
+    snprintf(cmd, sizeof(cmd), 
+             "cp /tmp/mali_install/mali_csffw.bin /lib/firmware/");
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_ERROR("Failed to install Mali firmware");
+        return ERROR_GPU_DRIVER_FAILED;
+    }
+    
+    // Install main Mali library
+    LOG_INFO("Installing Mali GPU library...");
+    snprintf(cmd, sizeof(cmd),
+             "cp /tmp/mali_install/libmali-valhall-g610-g6p0-x11-wayland-gbm.so "
+             "/usr/lib/aarch64-linux-gnu/libmali.so.1");
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_ERROR("Failed to install Mali library");
+        return ERROR_GPU_DRIVER_FAILED;
+    }
+    
+    // Create symbolic links
+    const char *mali_links[] = {
+        "libEGL.so.1", "libEGL.so",
+        "libGLESv1_CM.so.1", "libGLESv1_CM.so",
+        "libGLESv2.so.2", "libGLESv2.so",
+        "libgbm.so.1", "libgbm.so",
+        NULL
+    };
+    
+    for (int i = 0; mali_links[i] != NULL; i += 2) {
+        snprintf(cmd, sizeof(cmd),
+                 "ln -sf /usr/lib/aarch64-linux-gnu/libmali.so.1 "
+                 "/usr/lib/aarch64-linux-gnu/mali/%s",
+                 mali_links[i]);
+        execute_command_safe(cmd, 0, NULL);
+        
+        if (mali_links[i + 1]) {
+            snprintf(cmd, sizeof(cmd),
+                     "ln -sf /usr/lib/aarch64-linux-gnu/mali/%s "
+                     "/usr/lib/aarch64-linux-gnu/mali/%s",
+                     mali_links[i], mali_links[i + 1]);
+            execute_command_safe(cmd, 0, NULL);
+        }
+    }
+    
+    // Update library cache
+    execute_command_safe("ldconfig", 1, NULL);
+    
+    LOG_INFO("Mali GPU drivers installed successfully");
+    return ERROR_SUCCESS;
+}
+
+// Setup OpenCL support
+int setup_opencl_support(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    error_context_t error_ctx = {0};
+    
+    if (!config->enable_opencl) {
+        LOG_INFO("OpenCL support disabled in configuration");
+        return ERROR_SUCCESS;
+    }
+    
+    LOG_INFO("Setting up OpenCL 2.2 support...");
+    
+    // Create OpenCL ICD file
+    const char *icd_content = "libmali.so.1\n";
+    FILE *icd_file = fopen("/etc/OpenCL/vendors/mali.icd", "w");
+    if (icd_file) {
+        fprintf(icd_file, "%s", icd_content);
+        fclose(icd_file);
+        LOG_DEBUG("Created Mali OpenCL ICD file");
+    } else {
+        LOG_WARNING("Failed to create OpenCL ICD file");
+    }
+    
+    // Set OpenCL environment variables
+    const char *opencl_env = 
+        "# Mali OpenCL Configuration\n"
+        "export OCL_ICD_VENDORS=/etc/OpenCL/vendors\n"
+        "export MALI_OPENCL_VERSION=220\n";
+    
+    FILE *env_file = fopen("/etc/profile.d/mali-opencl.sh", "w");
+    if (env_file) {
+        fprintf(env_file, "%s", opencl_env);
+        fclose(env_file);
+        chmod("/etc/profile.d/mali-opencl.sh", 0644);
+        LOG_DEBUG("Created OpenCL environment configuration");
+    }
+    
+    // Test OpenCL installation
+    LOG_INFO("Testing OpenCL installation...");
+    if (execute_command_safe("clinfo", 1, &error_ctx) != 0) {
+        LOG_WARNING("OpenCL test failed - this is normal during build");
+    }
+    
+    LOG_INFO("OpenCL 2.2 support configured");
+    return ERROR_SUCCESS;
+}
+
+// Setup Vulkan support
+int setup_vulkan_support(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    error_context_t error_ctx = {0};
+    
+    if (!config->enable_vulkan) {
+        LOG_INFO("Vulkan support disabled in configuration");
+        return ERROR_SUCCESS;
+    }
+    
+    LOG_INFO("Setting up Vulkan 1.2 support...");
+    
+    // Install Vulkan driver if available
+    if (access("/tmp/mali_install/libmali-valhall-g610-g6p0-wayland-gbm-vulkan.so", F_OK) == 0) {
+        snprintf(cmd, sizeof(cmd),
+                 "cp /tmp/mali_install/libmali-valhall-g610-g6p0-wayland-gbm-vulkan.so "
+                 "/usr/lib/aarch64-linux-gnu/libmali-vulkan.so.1");
+        if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+            LOG_WARNING("Failed to install Vulkan-enabled Mali driver");
+        }
+    }
+    
+    // Create Vulkan ICD JSON
+    const char *vulkan_icd = 
+        "{\n"
+        "    \"ICD\": {\n"
+        "        \"library_path\": \"/usr/lib/aarch64-linux-gnu/libmali-vulkan.so.1\",\n"
+        "        \"api_version\": \"1.2.0\"\n"
+        "    },\n"
+        "    \"layer\": {}\n"
+        "}\n";
+    
+    FILE *vulkan_file = fopen("/usr/share/vulkan/icd.d/mali_icd.aarch64.json", "w");
+    if (vulkan_file) {
+        fprintf(vulkan_file, "%s", vulkan_icd);
+        fclose(vulkan_file);
+        LOG_DEBUG("Created Vulkan ICD configuration");
+    } else {
+        LOG_WARNING("Failed to create Vulkan ICD file");
+    }
+    
+    // Set Vulkan environment
+    const char *vulkan_env = 
+        "# Mali Vulkan Configuration\n"
+        "export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/mali_icd.aarch64.json\n";
+    
+    FILE *env_file = fopen("/etc/profile.d/mali-vulkan.sh", "w");
+    if (env_file) {
+        fprintf(env_file, "%s", vulkan_env);
+        fclose(env_file);
+        chmod("/etc/profile.d/mali-vulkan.sh", 0644);
+    }
+    
+    // Test Vulkan
+    LOG_INFO("Testing Vulkan installation...");
+    if (execute_command_safe("vulkaninfo --summary", 1, &error_ctx) != 0) {
+        LOG_WARNING("Vulkan test failed - this is normal during build");
+    }
+    
+    LOG_INFO("Vulkan 1.2 support configured");
+    return ERROR_SUCCESS;
+}
+
+// Configure kernel
+int configure_kernel(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    char kernel_dir[MAX_PATH_LEN];
+    error_context_t error_ctx = {0};
+    
+    LOG_INFO("Configuring kernel with Mali GPU support...");
+    
+    snprintf(kernel_dir, sizeof(kernel_dir), "%s/linux", config->build_dir);
+    
+    if (chdir(kernel_dir) != 0) {
+        LOG_ERROR("Failed to change to kernel directory");
+        return ERROR_KERNEL_CONFIG_FAILED;
+    }
+    
+    // Set environment variables
+    if (setenv("ARCH", config->arch, 1) != 0) {
+        LOG_WARNING("Failed to set ARCH environment variable");
+    }
+    if (setenv("CROSS_COMPILE", config->cross_compile, 1) != 0) {
+        LOG_WARNING("Failed to set CROSS_COMPILE environment variable");
+    }
+    
+    // Clean if requested
+    if (config->clean_build) {
+        LOG_INFO("Cleaning previous build artifacts...");
+        execute_command_safe("make mrproper", 1, &error_ctx);
+    }
+    
+    // Use defconfig
+    snprintf(cmd, sizeof(cmd), "make %s", config->defconfig);
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_WARNING("Failed to use specific defconfig, trying generic...");
+        if (execute_command_safe("make defconfig", 1, &error_ctx) != 0) {
+            LOG_ERROR("Failed to configure kernel");
+            return ERROR_KERNEL_CONFIG_FAILED;
+        }
+    }
+    
+    // Enable RK3588 and Mali GPU options
+    LOG_INFO("Enabling RK3588 and Mali GPU configurations...");
+    
+    const char *config_options[] = {
+        "CONFIG_ARCH_ROCKCHIP=y",
+        "CONFIG_ARM64=y",
+        "CONFIG_ROCKCHIP_RK3588=y",
+        "CONFIG_DRM_ROCKCHIP=y",
+        "CONFIG_DRM_PANFROST=y",
+        "CONFIG_MALI_MIDGARD=m",
+        "CONFIG_MALI_CSF_SUPPORT=y",
+        "CONFIG_DMA_CMA=y",
+        "CONFIG_CMA=y",
+        NULL
+    };
+    
+    FILE *config_file = fopen(".config", "a");
+    if (config_file) {
+        int i;
+        for (i = 0; config_options[i] != NULL; i++) {
+            fprintf(config_file, "%s\n", config_options[i]);
+        }
+        fclose(config_file);
+    }
+    
+    // Resolve dependencies
+    execute_command_safe("make olddefconfig", 1, &error_ctx);
+    
+    LOG_INFO("Kernel configured successfully");
+    return ERROR_SUCCESS;
+}
+
+// Build kernel
+int build_kernel(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    error_context_t error_ctx = {0};
+    
+    LOG_INFO("Building kernel with Mali GPU support (this may take a while)...");
+    
+    // Set environment variables
+    if (setenv("ARCH", config->arch, 1) != 0) {
+        LOG_WARNING("Failed to set ARCH environment variable");
+    }
+    if (setenv("CROSS_COMPILE", config->cross_compile, 1) != 0) {
+        LOG_WARNING("Failed to set CROSS_COMPILE environment variable");
+    }
+    
+    // Build kernel image
+    snprintf(cmd, sizeof(cmd), "make -j%d Image", config->jobs);
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_ERROR("Failed to build kernel image");
+        return ERROR_COMPILATION_FAILED;
+    }
+    
+    // Build device tree blobs
+    snprintf(cmd, sizeof(cmd), "make -j%d dtbs", config->jobs);
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_ERROR("Failed to build device tree blobs");
+        return ERROR_COMPILATION_FAILED;
+    }
+    
+    // Build modules
+    snprintf(cmd, sizeof(cmd), "make -j%d modules", config->jobs);
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_ERROR("Failed to build kernel modules");
+        return ERROR_COMPILATION_FAILED;
+    }
+    
+    LOG_INFO("Kernel built successfully");
+    return ERROR_SUCCESS;
+}
+
+// Install kernel
+int install_kernel(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    char kernel_dir[MAX_PATH_LEN];
+    char modules_dir[MAX_PATH_LEN];
+    error_context_t error_ctx = {0};
+    
+    LOG_INFO("Installing kernel and modules...");
+    
+    snprintf(kernel_dir, sizeof(kernel_dir), "%s/linux", config->build_dir);
+    snprintf(modules_dir, sizeof(modules_dir), "%s/rootfs/lib/modules", config->output_dir);
+    
+    if (chdir(kernel_dir) != 0) {
+        LOG_ERROR("Failed to change to kernel directory");
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    // Create output directories
+    snprintf(cmd, sizeof(cmd), "mkdir -p %s/rootfs/boot", config->output_dir);
+    if (execute_command_safe(cmd, 0, &error_ctx) != 0) {
+        LOG_ERROR("Failed to create boot directory");
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    // Install kernel image
+    LOG_INFO("Installing kernel image...");
+    snprintf(cmd, sizeof(cmd), 
+             "cp arch/arm64/boot/Image %s/rootfs/boot/vmlinuz-%s",
+             config->output_dir, config->kernel_version);
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_ERROR("Failed to install kernel image");
+        return ERROR_INSTALLATION_FAILED;
+    }
+    
+    // Install device tree blobs
+    LOG_INFO("Installing device tree blobs...");
+    snprintf(cmd, sizeof(cmd),
+             "cp arch/arm64/boot/dts/rockchip/rk3588*.dtb %s/rootfs/boot/",
+             config->output_dir);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Install modules
+    LOG_INFO("Installing kernel modules...");
+    snprintf(cmd, sizeof(cmd),
+             "make ARCH=%s CROSS_COMPILE=%s INSTALL_MOD_PATH=%s/rootfs modules_install",
+             config->arch, config->cross_compile, config->output_dir);
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_ERROR("Failed to install kernel modules");
+        return ERROR_INSTALLATION_FAILED;
+    }
+    
+    // Create initramfs
+    LOG_INFO("Creating initramfs...");
+    snprintf(cmd, sizeof(cmd),
+             "cd %s/rootfs && find . -print0 | cpio --null -ov --format=newc | "
+             "gzip -9 > %s/rootfs/boot/initrd.img-%s",
+             config->output_dir, config->output_dir, config->kernel_version);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    LOG_INFO("Kernel installation completed");
+    return ERROR_SUCCESS;
+}
+
+// Build Ubuntu rootfs
+int build_ubuntu_rootfs(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    char rootfs_dir[MAX_PATH_LEN];
+    error_context_t error_ctx = {0};
+    
+    LOG_INFO("Building Ubuntu root filesystem...");
+    
+    snprintf(rootfs_dir, sizeof(rootfs_dir), "%s/rootfs", config->output_dir);
+    
+    // Create rootfs directory
+    if (create_directory_safe(rootfs_dir, &error_ctx) != 0) {
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    // Run debootstrap first stage
+    LOG_INFO("Running debootstrap first stage...");
+    snprintf(cmd, sizeof(cmd),
+             "debootstrap --arch=arm64 --foreign --include=wget,ca-certificates "
+             "%s %s http://ports.ubuntu.com/ubuntu-ports",
+             config->ubuntu_codename, rootfs_dir);
+    
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_ERROR("Failed to run debootstrap first stage");
+        return ERROR_INSTALLATION_FAILED;
+    }
+    
+    // Copy qemu static for arm64 emulation
+    snprintf(cmd, sizeof(cmd),
+             "cp /usr/bin/qemu-aarch64-static %s/usr/bin/",
+             rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    // Run debootstrap second stage
+    LOG_INFO("Running debootstrap second stage...");
+    snprintf(cmd, sizeof(cmd),
+             "chroot %s /debootstrap/debootstrap --second-stage",
+             rootfs_dir);
+    
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_ERROR("Failed to run debootstrap second stage");
+        return ERROR_INSTALLATION_FAILED;
+    }
+    
+    // Configure apt sources
+    LOG_INFO("Configuring package sources...");
+    FILE *sources_file = fopen("/tmp/sources.list", "w");
+    if (sources_file) {
+        fprintf(sources_file,
+                "deb http://ports.ubuntu.com/ubuntu-ports %s main restricted universe multiverse\n"
+                "deb http://ports.ubuntu.com/ubuntu-ports %s-updates main restricted universe multiverse\n"
+                "deb http://ports.ubuntu.com/ubuntu-ports %s-security main restricted universe multiverse\n",
+                config->ubuntu_codename, config->ubuntu_codename, config->ubuntu_codename);
+        fclose(sources_file);
+        
+        snprintf(cmd, sizeof(cmd),
+                 "cp /tmp/sources.list %s/etc/apt/sources.list",
+                 rootfs_dir);
+        execute_command_safe(cmd, 0, &error_ctx);
+    }
+    
+    // Update package database in chroot
+    LOG_INFO("Updating package database...");
+    snprintf(cmd, sizeof(cmd),
+             "chroot %s apt update",
+             rootfs_dir);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Install base packages based on distribution type
+    const char *base_packages = "ubuntu-minimal init systemd";
+    const char *extra_packages = "";
+    
+    switch (config->distro_type) {
+        case DISTRO_DESKTOP:
+            extra_packages = "ubuntu-desktop network-manager";
+            break;
+        case DISTRO_SERVER:
+            extra_packages = "ubuntu-server openssh-server";
+            break;
+        case DISTRO_EMULATION:
+            extra_packages = "xserver-xorg-core openbox";
+            break;
+        case DISTRO_MINIMAL:
+            extra_packages = "";
+            break;
+        default:
+            break;
+    }
+    
+    LOG_INFO("Installing base system packages...");
+    snprintf(cmd, sizeof(cmd),
+             "chroot %s apt install -y %s %s",
+             rootfs_dir, base_packages, extra_packages);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Configure hostname
+    snprintf(cmd, sizeof(cmd), "echo '%s' > %s/etc/hostname",
+             config->hostname, rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    // Create user
+    LOG_INFO("Creating user account...");
+    snprintf(cmd, sizeof(cmd),
+             "chroot %s useradd -m -s /bin/bash -G sudo,audio,video %s",
+             rootfs_dir, config->username);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    // Set password
+    snprintf(cmd, sizeof(cmd),
+             "echo '%s:%s' | chroot %s chpasswd",
+             config->username, config->password, rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    // Clean up
+    snprintf(cmd, sizeof(cmd), "rm -f %s/usr/bin/qemu-aarch64-static", rootfs_dir);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    LOG_INFO("Ubuntu root filesystem created successfully");
+    return ERROR_SUCCESS;
+}
+
+// Download U-Boot source
+int download_uboot_source(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    char uboot_dir[MAX_PATH_LEN];
+    error_context_t error_ctx = {0};
+    
+    LOG_INFO("Downloading U-Boot source for RK3588...");
+    
+    snprintf(uboot_dir, sizeof(uboot_dir), "%s/u-boot", config->build_dir);
+    
+    // Clone U-Boot with Rockchip support
+    snprintf(cmd, sizeof(cmd),
+             "git clone --depth 1 --branch v2024.01-rc4 "
+             "https://github.com/u-boot/u-boot.git %s",
+             uboot_dir);
+    
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_WARNING("Failed to clone mainline U-Boot, trying Rockchip fork...");
+        
+        snprintf(cmd, sizeof(cmd),
+                 "git clone --depth 1 "
+                 "https://github.com/rockchip-linux/u-boot.git %s",
+                 uboot_dir);
+        
+        if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+            LOG_ERROR("Failed to download U-Boot source");
+            return ERROR_NETWORK_FAILURE;
+        }
+    }
+    
+    // Download ARM Trusted Firmware
+    LOG_INFO("Downloading ARM Trusted Firmware...");
+    snprintf(cmd, sizeof(cmd),
+             "git clone --depth 1 "
+             "https://github.com/ARM-software/arm-trusted-firmware.git "
+             "%s/arm-trusted-firmware",
+             config->build_dir);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Download Rockchip binary blobs
+    LOG_INFO("Downloading Rockchip firmware blobs...");
+    snprintf(cmd, sizeof(cmd),
+             "git clone --depth 1 "
+             "https://github.com/rockchip-linux/rkbin.git %s/rkbin",
+             config->build_dir);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    LOG_INFO("U-Boot source downloaded successfully");
+    return ERROR_SUCCESS;
+}
+
+// Build U-Boot
+int build_uboot(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    char uboot_dir[MAX_PATH_LEN];
+    error_context_t error_ctx = {0};
+    
+    LOG_INFO("Building U-Boot for Orange Pi 5 Plus...");
+    
+    snprintf(uboot_dir, sizeof(uboot_dir), "%s/u-boot", config->build_dir);
+    
+    if (chdir(uboot_dir) != 0) {
+        LOG_ERROR("Failed to change to U-Boot directory");
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    // Configure U-Boot for Orange Pi 5 Plus
+    snprintf(cmd, sizeof(cmd),
+             "make ARCH=arm CROSS_COMPILE=%s orangepi-5-plus-rk3588_defconfig",
+             config->cross_compile);
+    
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_WARNING("Orange Pi 5 Plus config not found, using generic RK3588");
+        snprintf(cmd, sizeof(cmd),
+                 "make ARCH=arm CROSS_COMPILE=%s evb-rk3588_defconfig",
+                 config->cross_compile);
+        execute_command_safe(cmd, 1, &error_ctx);
+    }
+    
+    // Build U-Boot
+    snprintf(cmd, sizeof(cmd),
+             "make ARCH=arm CROSS_COMPILE=%s -j%d",
+             config->cross_compile, config->jobs);
+    
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_ERROR("Failed to build U-Boot");
+        return ERROR_COMPILATION_FAILED;
+    }
+    
+    // Build ARM Trusted Firmware
+    LOG_INFO("Building ARM Trusted Firmware...");
+    snprintf(cmd, sizeof(cmd),
+             "cd %s/arm-trusted-firmware && "
+             "make CROSS_COMPILE=%s PLAT=rk3588 bl31",
+             config->build_dir, config->cross_compile);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Create final bootloader image
+    LOG_INFO("Creating bootloader image...");
+    snprintf(cmd, sizeof(cmd),
+             "%s/rkbin/tools/mkimage -n rk3588 -T rksd -d "
+             "%s/rkbin/bin/rk35/rk3588_ddr_lp4_2112MHz_lp5_2736MHz_v1.08.bin:%s/spl/u-boot-spl.bin "
+             "%s/idbloader.img",
+             config->build_dir, config->build_dir, uboot_dir, config->output_dir);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    LOG_INFO("U-Boot built successfully");
+    return ERROR_SUCCESS;
+}
+
+// Create system image
+int create_system_image(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    char image_path[MAX_PATH_LEN];
+    error_context_t error_ctx = {0};
+    
+    LOG_INFO("Creating system image...");
+    
+    snprintf(image_path, sizeof(image_path), 
+             "%s/orangepi5plus-%s-%s.img",
+             config->output_dir, config->ubuntu_codename, config->kernel_version);
+    
+    // Create empty image file
+    LOG_INFO("Creating image file...");
+    snprintf(cmd, sizeof(cmd),
+             "dd if=/dev/zero of=%s bs=1M count=%s status=progress",
+             image_path, config->image_size);
+    
+    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
+        LOG_ERROR("Failed to create image file");
+        return ERROR_UNKNOWN;
+    }
+    
+    // Create partition table
+    LOG_INFO("Creating partition table...");
+    snprintf(cmd, sizeof(cmd),
+             "parted -s %s mklabel gpt", image_path);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Create partitions
+    snprintf(cmd, sizeof(cmd),
+             "parted -s %s mkpart loader 64s 8MiB", image_path);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd),
+             "parted -s %s mkpart boot fat32 8MiB 256MiB", image_path);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd),
+             "parted -s %s mkpart root ext4 256MiB 100%%", image_path);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd),
+             "parted -s %s set 2 boot on", image_path);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Setup loop device
+    LOG_INFO("Setting up loop device...");
+    snprintf(cmd, sizeof(cmd),
+             "losetup -P -f %s", image_path);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Get loop device name
+    FILE *fp = popen("losetup -j " image_path " | cut -d: -f1", "r");
+    char loop_dev[32];
+    if (fp && fgets(loop_dev, sizeof(loop_dev), fp)) {
+        loop_dev[strcspn(loop_dev, "\n")] = 0;
+        pclose(fp);
+    } else {
+        LOG_ERROR("Failed to get loop device");
+        return ERROR_UNKNOWN;
+    }
+    
+    // Format partitions
+    LOG_INFO("Formatting partitions...");
+    snprintf(cmd, sizeof(cmd), "mkfs.vfat -F 32 %sp2", loop_dev);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "mkfs.ext4 -F %sp3", loop_dev);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Mount partitions
+    LOG_INFO("Mounting partitions...");
+    execute_command_safe("mkdir -p /mnt/boot /mnt/root", 0, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "mount %sp2 /mnt/boot", loop_dev);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    snprintf(cmd, sizeof(cmd), "mount %sp3 /mnt/root", loop_dev);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Copy rootfs
+    LOG_INFO("Copying root filesystem...");
+    snprintf(cmd, sizeof(cmd),
+             "rsync -aHAXx %s/rootfs/ /mnt/root/",
+             config->output_dir);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Copy boot files
+    LOG_INFO("Copying boot files...");
+    snprintf(cmd, sizeof(cmd),
+             "cp -r %s/rootfs/boot/* /mnt/boot/",
+             config->output_dir);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Install bootloader
+    LOG_INFO("Installing bootloader...");
+    snprintf(cmd, sizeof(cmd),
+             "dd if=%s/idbloader.img of=%s seek=64 conv=notrunc",
+             config->output_dir, loop_dev);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Create boot configuration
+    FILE *boot_cfg = fopen("/mnt/boot/extlinux/extlinux.conf", "w");
+    if (boot_cfg) {
+        fprintf(boot_cfg,
+                "label Ubuntu\n"
+                "    kernel /vmlinuz-%s\n"
+                "    initrd /initrd.img-%s\n"
+                "    devicetreedir /dtbs\n"
+                "    append console=ttyS2,1500000 root=/dev/mmcblk0p3 rw rootwait\n",
+                config->kernel_version, config->kernel_version);
+        fclose(boot_cfg);
+    }
+    
+    // Cleanup
+    LOG_INFO("Cleaning up...");
+    execute_command_safe("sync", 0, &error_ctx);
+    execute_command_safe("umount /mnt/boot /mnt/root", 0, &error_ctx);
+    snprintf(cmd, sizeof(cmd), "losetup -d %s", loop_dev);
+    execute_command_safe(cmd, 0, &error_ctx);
+    
+    LOG_INFO("System image created successfully: %s", image_path);
+    return ERROR_SUCCESS;
+}
+
+// Install system packages
+int install_system_packages(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    char rootfs_dir[MAX_PATH_LEN];
+    error_context_t error_ctx = {0};
+    
+    LOG_INFO("Installing system packages...");
+    
+    snprintf(rootfs_dir, sizeof(rootfs_dir), "%s/rootfs", config->output_dir);
+    
+    // Common packages for all distributions
+    const char *common_packages = 
+        "linux-firmware wireless-tools wpasupplicant "
+        "network-manager usbutils pciutils i2c-tools "
+        "htop nano vim curl wget git sudo locales "
+        "software-properties-common dbus-x11";
+    
+    snprintf(cmd, sizeof(cmd),
+             "chroot %s apt install -y %s",
+             rootfs_dir, common_packages);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    // Distribution-specific packages
+    switch (config->distro_type) {
+        case DISTRO_DESKTOP:
+            LOG_INFO("Installing desktop packages...");
+            snprintf(cmd, sizeof(cmd),
+                     "chroot %s apt install -y "
+                     "gnome-shell gdm3 gnome-terminal firefox "
+                     "gnome-tweaks gnome-system-monitor",
+                     rootfs_dir);
+            execute_command_safe(cmd, 1, &error_ctx);
+            break;
+            
+        case DISTRO_SERVER:
+            LOG_INFO("Installing server packages...");
+            snprintf(cmd, sizeof(cmd),
+                     "chroot %s apt install -y "
+                     "openssh-server fail2ban ufw "
+                     "docker.io docker-compose",
+                     rootfs_dir);
+            execute_command_safe(cmd, 1, &error_ctx);
+            break;
+            
+        case DISTRO_EMULATION:
+            LOG_INFO("Installing emulation packages...");
+            install_emulation_packages(config);
+            break;
+            
+        default:
+            break;
+    }
+    
+    // Install GPU support packages if enabled
+    if (config->install_gpu_blobs) {
+        LOG_INFO("Installing GPU support packages...");
+        snprintf(cmd, sizeof(cmd),
+                 "chroot %s apt install -y "
+                 "mesa-utils glmark2-es2 vulkan-tools",
+                 rootfs_dir);
+        execute_command_safe(cmd, 1, &error_ctx);
+    }
+    
+    // Configure locales
+    LOG_INFO("Configuring locales...");
+    snprintf(cmd, sizeof(cmd),
+             "chroot %s locale-gen en_US.UTF-8",
+             rootfs_dir);
+    execute_command_safe(cmd, 1, &error_ctx);
+    
+    LOG_INFO("System packages installed successfully");
+    return ERROR_SUCCESS;
+}
+
+// Configure system services
+int configure_system_services(build_config_t *config) {
+    char cmd[MAX_CMD_LEN];
+    char rootfs_dir[MAX_PATH_LEN];
+    error_context_t error_ctx = {0};
+    
+    LOG_INFO("Configuring system services...");
+    
+    snprintf(rootfs_dir, sizeof(rootfs_dir), "%s/rootfs", config->output_dir);
+    
+    // Enable essential services
+    const char *enable_services[] = {
+        "systemd-networkd",
+        "systemd-resolved",
+        "ssh",
+        NULL
+    };
+    
+    for (int i = 0; enable_services[i] != NULL; i++) {
+        snprintf(cmd, sizeof(cmd),
+                 "chroot %s systemctl enable %s",
+                 rootfs_dir, enable_services[i]);
+        execute_command_safe(cmd, 0, &error_ctx);
+    }
+    
+    // Distribution-specific service configuration
+    switch (config->distro_type) {
+        case DISTRO_DESKTOP:
+            snprintf(cmd, sizeof(cmd),
+                     "chroot %s systemctl enable gdm3",
+                     rootfs_dir);
+            execute_command_safe(cmd, 0, &error_ctx);
+            break;
+            
+        case DISTRO_SERVER:
+            // Configure firewall
+            snprintf(cmd, sizeof(cmd),
+                     "chroot %s ufw default deny incoming",
+                     rootfs_dir);
+            execute_command_safe(cmd, 0, &error_ctx);
+            
+            snprintf(cmd, sizeof(cmd),
+                     "chroot %s ufw default allow outgoing",
+                     rootfs_dir);
+            execute_command_safe(cmd, 0, &error_ctx);
+            
+            snprintf(cmd, sizeof(cmd),
+                     "chroot %s ufw allow ssh",
+                     rootfs_dir);
+            execute_command_safe(cmd, 0, &error_ctx);
+            break;
+            
+        default:
+            break;
+    }
+    
+    // Configure network
+    FILE *netplan = fopen("/tmp/01-netcfg.yaml", "w");
+    if (netplan) {
+        fprintf(netplan,
+                "network:\n"
+                "  version: 2\n"
+                "  renderer: networkd\n"
+                "  ethernets:\n"
+                "    eth0:\n"
+                "      dhcp4: yes\n"
+                "      dhcp6: yes\n");
+        fclose(netplan);
+        
+        snprintf(cmd, sizeof(cmd),
+                 "cp /tmp/01-netcfg.yaml %s/etc/netplan/",
+                 rootfs_dir);
+        execute_command_safe(cmd, 0, &error_ctx);
+    }
+    
+    // Configure fstab
+    FILE *fstab = fopen("/tmp/fstab", "w");
+    if (fstab) {
+        fprintf(fstab,
+                "# /etc/fstab: static file system information\n"
+                "/dev/mmcblk0p3  /       ext4    defaults        0 1\n"
+                "/dev/mmcblk0p2  /boot   vfat    defaults        0 2\n");
+        fclose(fstab);
+        
+        snprintf(cmd, sizeof(cmd),
+                 "cp /tmp/fstab %s/etc/",
+                 rootfs_dir);
+        execute_command_safe(cmd, 0, &error_ctx);
+    }
+    
+    LOG_INFO("System services configured successfully");
+    return ERROR_SUCCESS;
+}
+
+// Verify GPU installation
+int verify_gpu_installation(void) {
+    error_context_t error_ctx = {0};
+    int gpu_ok = 1;
+    
+    LOG_INFO("Verifying GPU installation...");
+    
+    // Check for Mali kernel module
+    if (system("lsmod | grep -q mali") != 0) {
+        LOG_WARNING("Mali kernel module not loaded");
+        gpu_ok = 0;
+    } else {
+        LOG_INFO("Mali kernel module detected");
+    }
+    
+    // Check for Mali libraries
+    if (access("/usr/lib/aarch64-linux-gnu/libmali.so.1", F_OK) != 0) {
+        LOG_WARNING("Mali GPU library not found");
+        gpu_ok = 0;
+    } else {
+        LOG_INFO("Mali GPU library found");
+    }
+    
+    // Check OpenGL ES
+    if (execute_command_safe("es2_info", 0, &error_ctx) == 0) {
+        LOG_INFO("OpenGL ES working");
+    } else {
+        LOG_WARNING("OpenGL ES test failed");
+        gpu_ok = 0;
+    }
+    
+    // Check OpenCL if enabled
+    if (global_config && global_config->enable_opencl) {
+        if (execute_command_safe("clinfo -l", 0, &error_ctx) == 0) {
+            LOG_INFO("OpenCL working");
+        } else {
+            LOG_WARNING("OpenCL test failed");
+            gpu_ok = 0;
+        }
+    }
+    
+    // Check Vulkan if enabled
+    if (global_config && global_config->enable_vulkan) {
+        if (execute_command_safe("vulkaninfo --summary", 0, &error_ctx) == 0) {
+            LOG_INFO("Vulkan working");
+        } else {
+            LOG_WARNING("Vulkan test failed");
+            gpu_ok = 0;
+        }
+    }
+    
+    if (gpu_ok) {
+        LOG_INFO("GPU installation verified successfully");
+        return ERROR_SUCCESS;
+    } else {
+        LOG_WARNING("GPU installation has issues but continuing");
+        return ERROR_SUCCESS;  // Non-fatal
+    }
+}
+
+// Detect current Ubuntu release
+int detect_current_ubuntu_release(build_config_t *config) {
+    FILE *fp;
+    char line[256];
+    
+    LOG_DEBUG("Detecting current Ubuntu release...");
+    
+    // Try to read /etc/os-release
+    fp = fopen("/etc/os-release", "r");
+    if (!fp) {
+        LOG_WARNING("Could not open /etc/os-release");
+        return ERROR_FILE_NOT_FOUND;
+    }
+    
+    while (fgets(line, sizeof(line), fp)) {
+        if (strncmp(line, "VERSION_ID=", 11) == 0) {
+            char *version = line + 11;
+            // Remove quotes and newline
+            if (*version == '"') version++;
+            char *end = strchr(version, '"');
+            if (end) *end = '\0';
+            end = strchr(version, '\n');
+            if (end) *end = '\0';
+            
+            strncpy(config->ubuntu_release, version, sizeof(config->ubuntu_release) - 1);
+            config->ubuntu_release[sizeof(config->ubuntu_release) - 1] = '\0';
+        }
+        else if (strncmp(line, "VERSION_CODENAME=", 17) == 0) {
+            char *codename = line + 17;
+            // Remove newline
+            char *end = strchr(codename, '\n');
+            if (end) *end = '\0';
+            
+            strncpy(config->ubuntu_codename, codename, sizeof(config->ubuntu_codename) - 1);
+            config->ubuntu_codename[sizeof(config->ubuntu_codename) - 1] = '\0';
+        }
+    }
+    
+    fclose(fp);
+    
+    if (strlen(config->ubuntu_release) > 0) {
+        char msg[256];
+        snprintf(msg, sizeof(msg), "Detected Ubuntu %s (%s)", 
+                 config->ubuntu_release, config->ubuntu_codename);
+        LOG_INFO(msg);
+        return ERROR_SUCCESS;
+    }
+    
+    LOG_WARNING("Could not detect Ubuntu release");
+    return ERROR_UNKNOWN;
+}
+
+// Cleanup build
+int cleanup_build(build_config_t *config) {
+    if (!config) {
+        return ERROR_UNKNOWN;
+    }
+    
+    LOG_INFO("Cleaning up build artifacts...");
+    
+    char cmd[MAX_CMD_LEN];
+    snprintf(cmd, sizeof(cmd), "rm -rf %s/* 2>/dev/null || true", config->build_dir);
+    execute_command_safe(cmd, 0, NULL);
+    
+    execute_command_safe("rm -rf /tmp/mali_install 2>/dev/null || true", 0, NULL);
+    
+    LOG_INFO("Cleanup completed");
+    return ERROR_SUCCESS;
+}
+
 // Start interactive build
 int start_interactive_build(build_config_t *config) {
     int choice;
@@ -1240,8 +2752,7 @@ int start_interactive_build(build_config_t *config) {
                 printf("════════════════════════════════════════════════════════════════════════\n");
                 printf("\nOrange Pi 5 Plus Ultimate Interactive Builder\n");
                 printf("Version: %s\n", VERSION);
-                printf("Setec Labs Presents:\n");
-                printf("By: Digijeth\n");
+                printf("Setec Labs Edition\n");
                 printf("\nThis builder integrates:\n");
                 printf("• Joshua-Riek Ubuntu Rockchip\n");
                 printf("• JeffyCN Mali GPU drivers\n");
@@ -1426,551 +2937,6 @@ int perform_custom_build(build_config_t *config) {
         }
     }
     
-    return ERROR_SUCCESS;
-}
-
-// Check dependencies
-int check_dependencies(void) {
-    LOG_DEBUG("Checking system dependencies...");
-    
-    const char *required_tools[] = {
-        "git", "make", "gcc", "wget", "curl", "bc", "debootstrap", 
-        "device-tree-compiler", "u-boot-tools", NULL
-    };
-    
-    int missing = 0;
-    
-    for (int i = 0; required_tools[i] != NULL; i++) {
-        char cmd[128];
-        snprintf(cmd, sizeof(cmd), "which %s >/dev/null 2>&1", required_tools[i]);
-        if (system(cmd) != 0) {
-            char msg[128];
-            snprintf(msg, sizeof(msg), "Required tool missing: %s", required_tools[i]);
-            LOG_WARNING(msg);
-            missing++;
-        }
-    }
-    
-    if (missing > 0) {
-        char msg[256];
-        snprintf(msg, sizeof(msg), "%d required tools are missing. They will be installed automatically.", missing);
-        LOG_INFO(msg);
-    }
-    
-    LOG_DEBUG("Dependency check completed");
-    return ERROR_SUCCESS;
-}
-
-// Setup build environment
-int setup_build_environment(void) {
-    error_context_t error_ctx = {0};
-    
-    LOG_INFO("Setting up build environment...");
-    
-    // Check disk space (15GB minimum)
-    int space_result = check_disk_space("/tmp", 15000);
-    if (space_result != ERROR_SUCCESS) {
-        if (global_config && !global_config->continue_on_error) {
-            return space_result;
-        }
-        LOG_WARNING("Continuing despite insufficient disk space warning");
-    }
-    
-    // Create build directory
-    if (create_directory_safe(BUILD_DIR, &error_ctx) != 0) {
-        return ERROR_FILE_NOT_FOUND;
-    }
-    
-    // Open log files
-    log_fp = fopen(LOG_FILE, "a");
-    if (!log_fp) {
-        LOG_WARNING("Could not open main log file, continuing without file logging");
-    } else {
-        LOG_DEBUG("Main log file opened successfully");
-    }
-    
-    error_log_fp = fopen(ERROR_LOG_FILE, "a");
-    if (!error_log_fp) {
-        LOG_WARNING("Could not open error log file");
-    } else {
-        LOG_DEBUG("Error log file opened successfully");
-    }
-    
-    // Update package lists
-    LOG_INFO("Updating package lists...");
-    if (execute_command_with_retry("apt update", 1, 3) != 0) {
-        error_ctx.code = ERROR_NETWORK_FAILURE;
-        strncpy(error_ctx.message, "Failed to update package lists after retries", MAX_ERROR_MSG - 1);
-        log_error_context(&error_ctx);
-        if (global_config && !global_config->continue_on_error) {
-            return ERROR_NETWORK_FAILURE;
-        }
-        LOG_WARNING("Continuing despite package update failure");
-    }
-    
-    LOG_INFO("Build environment setup completed successfully");
-    return ERROR_SUCCESS;
-}
-
-// Install prerequisites
-int install_prerequisites(void) {
-    LOG_INFO("Installing build prerequisites...");
-    
-    const char *packages[] = {
-        // Basic build tools
-        "build-essential",
-        "gcc-aarch64-linux-gnu",
-        "g++-aarch64-linux-gnu",
-        "libncurses-dev",
-        "gawk",
-        "flex",
-        "bison",
-        "openssl",
-        "libssl-dev",
-        "dkms",
-        "libelf-dev",
-        "libudev-dev",
-        "libpci-dev",
-        "libiberty-dev",
-        "autoconf",
-        "llvm",
-        // Additional tools
-        "git",
-        "wget",
-        "curl",
-        "bc",
-        "rsync",
-        "kmod",
-        "cpio",
-        "python3",
-        "python3-pip",
-        "device-tree-compiler",
-        // Ubuntu kernel build dependencies
-        "fakeroot",
-        "kernel-package",
-        "u-boot-tools",
-        // Mali GPU and OpenCL/Vulkan support
-        "mesa-opencl-icd",
-        "vulkan-tools",
-        "vulkan-utils",
-        "vulkan-validationlayers",
-        "libvulkan-dev",
-        "ocl-icd-opencl-dev",
-        "opencl-headers",
-        "clinfo",
-        // Media and hardware acceleration
-        "va-driver-all",
-        "vdpau-driver-all",
-        "mesa-va-drivers",
-        "mesa-vdpau-drivers",
-        // Development libraries
-        "libegl1-mesa-dev",
-        "libgles2-mesa-dev",
-        "libgl1-mesa-dev",
-        "libdrm-dev",
-        "libgbm-dev",
-        "libwayland-dev",
-        "libx11-dev",
-        "meson",
-        "ninja-build",
-        // For rootfs creation
-        "debootstrap",
-        "qemu-user-static",
-        "parted",
-        "dosfstools",
-        "e2fsprogs",
-        NULL
-    };
-    
-    char cmd[MAX_CMD_LEN * 2];
-    int i;
-    
-    // Install all packages at once
-    strcpy(cmd, "DEBIAN_FRONTEND=noninteractive apt install -y");
-    for (i = 0; packages[i] != NULL; i++) {
-        strcat(cmd, " ");
-        strcat(cmd, packages[i]);
-    }
-    
-    if (execute_command_with_retry(cmd, 1, 2) != 0) {
-        error_context_t error_ctx = {0};
-        error_ctx.code = ERROR_DEPENDENCY_MISSING;
-        strncpy(error_ctx.message, "Failed to install prerequisites after retries", MAX_ERROR_MSG - 1);
-        log_error_context(&error_ctx);
-        return ERROR_DEPENDENCY_MISSING;
-    }
-    
-    LOG_INFO("Prerequisites installed successfully");
-    return ERROR_SUCCESS;
-}
-
-// Download kernel source
-int download_kernel_source(build_config_t *config) {
-    char cmd[MAX_CMD_LEN];
-    char source_dir[MAX_PATH_LEN];
-    error_context_t error_ctx = {0};
-    
-    if (!config) {
-        LOG_ERROR("Configuration is NULL");
-        return ERROR_UNKNOWN;
-    }
-    
-    LOG_INFO("Downloading kernel source...");
-    
-    snprintf(source_dir, sizeof(source_dir), "%s/linux", config->build_dir);
-    
-    // Change to build directory
-    if (chdir(config->build_dir) != 0) {
-        LOG_ERROR("Failed to change to build directory");
-        return ERROR_FILE_NOT_FOUND;
-    }
-    
-    // Clone Ubuntu Rockchip kernel source with Mali GPU support
-    LOG_INFO("Downloading Ubuntu Rockchip kernel with Orange Pi support...");
-    snprintf(cmd, sizeof(cmd), 
-             "git clone --depth 1 --branch ubuntu-rockchip-6.8-opi5 "
-             "https://github.com/Joshua-Riek/linux-rockchip.git linux");
-    
-    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
-        LOG_WARNING("Failed to clone Joshua-Riek Ubuntu Rockchip kernel, trying alternatives...");
-        
-        // Try other available branches
-        const char *alternative_branches[] = {
-            "ubuntu-rockchip-6.8",
-            "ubuntu-rockchip-6.1", 
-            "ubuntu-rockchip",
-            NULL
-        };
-        
-        int success = 0;
-        int i;
-        for (i = 0; alternative_branches[i] != NULL && !success; i++) {
-            char alt_cmd[MAX_CMD_LEN];
-            snprintf(alt_cmd, sizeof(alt_cmd),
-                     "git clone --depth 1 --branch %s "
-                     "https://github.com/Joshua-Riek/linux-rockchip.git linux",
-                     alternative_branches[i]);
-            
-            if (execute_command_safe(alt_cmd, 1, &error_ctx) == 0) {
-                success = 1;
-                char success_msg[256];
-                snprintf(success_msg, sizeof(success_msg), 
-                         "Successfully cloned using branch: %s", alternative_branches[i]);
-                LOG_INFO(success_msg);
-                break;
-            }
-        }
-        
-        if (!success) {
-            LOG_WARNING("Failed to clone Ubuntu Rockchip kernel, trying mainline...");
-            
-            // Try latest stable kernel
-            snprintf(cmd, sizeof(cmd),
-                     "git clone --depth 1 --branch v%s "
-                     "https://github.com/torvalds/linux.git linux",
-                     config->kernel_version);
-            
-            if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
-                LOG_ERROR("Failed to download kernel from all sources");
-                return ERROR_NETWORK_FAILURE;
-            }
-        }
-    }
-    
-    // Verify the source was downloaded
-    if (access(source_dir, F_OK) != 0) {
-        LOG_ERROR("Kernel source directory not found after download");
-        return ERROR_FILE_NOT_FOUND;
-    }
-    
-    LOG_INFO("Kernel source downloaded successfully");
-    return ERROR_SUCCESS;
-}
-
-// Download Ubuntu Rockchip patches
-int download_ubuntu_rockchip_patches(void) {
-    char cmd[MAX_CMD_LEN];
-    
-    LOG_INFO("Downloading Ubuntu Rockchip project components...");
-    
-    // Clone Ubuntu Rockchip repository
-    snprintf(cmd, sizeof(cmd),
-             "git clone --depth 1 "
-             "https://github.com/Joshua-Riek/ubuntu-rockchip.git ubuntu-rockchip");
-    
-    if (execute_command_with_retry(cmd, 1, 2) != 0) {
-        LOG_WARNING("Failed to download Ubuntu Rockchip project components");
-        return ERROR_SUCCESS; // Non-critical
-    }
-    
-    LOG_INFO("Ubuntu Rockchip components downloaded");
-    return ERROR_SUCCESS;
-}
-
-// Download Mali blobs
-int download_mali_blobs(build_config_t *config) {
-    error_context_t error_ctx = {0};
-    int i;
-    
-    LOG_INFO("Downloading Mali G610 GPU drivers and firmware...");
-    
-    // Create Mali directory
-    if (create_directory_safe("/tmp/mali_install", &error_ctx) != 0) {
-        return ERROR_FILE_NOT_FOUND;
-    }
-    
-    if (chdir("/tmp/mali_install") != 0) {
-        LOG_ERROR("Failed to change to Mali install directory");
-        return ERROR_FILE_NOT_FOUND;
-    }
-    
-    // Download all Mali drivers
-    for (i = 0; strlen(mali_drivers[i].url) > 0; i++) {  // Check for empty string instead of NULL
-        mali_driver_t *driver = &mali_drivers[i];
-        
-        // Skip optional drivers based on config
-        if (!config->enable_vulkan && strstr(driver->description, "Vulkan")) {
-            LOG_INFO("Skipping Vulkan driver (disabled)");
-            continue;
-        }
-        
-        char msg[256];
-        snprintf(msg, sizeof(msg), "Downloading %s...", driver->description);
-        LOG_INFO(msg);
-        
-        char cmd[MAX_CMD_LEN];
-        snprintf(cmd, sizeof(cmd), "wget -O %s \"%s\"", driver->filename, driver->url);
-        
-        if (execute_command_with_retry(cmd, 1, 3) != 0) {
-            if (driver->required) {
-                LOG_ERROR("Failed to download required Mali driver");
-                return ERROR_GPU_DRIVER_FAILED;
-            } else {
-                LOG_WARNING("Failed to download optional Mali driver");
-            }
-        }
-    }
-    
-    LOG_INFO("Mali GPU drivers downloaded successfully");
-    return ERROR_SUCCESS;
-}
-
-// Configure kernel
-int configure_kernel(build_config_t *config) {
-    char cmd[MAX_CMD_LEN];
-    char kernel_dir[MAX_PATH_LEN];
-    error_context_t error_ctx = {0};
-    
-    LOG_INFO("Configuring kernel with Mali GPU support...");
-    
-    snprintf(kernel_dir, sizeof(kernel_dir), "%s/linux", config->build_dir);
-    
-    if (chdir(kernel_dir) != 0) {
-        LOG_ERROR("Failed to change to kernel directory");
-        return ERROR_KERNEL_CONFIG_FAILED;
-    }
-    
-    // Set environment variables
-    if (setenv("ARCH", config->arch, 1) != 0) {
-        LOG_WARNING("Failed to set ARCH environment variable");
-    }
-    if (setenv("CROSS_COMPILE", config->cross_compile, 1) != 0) {
-        LOG_WARNING("Failed to set CROSS_COMPILE environment variable");
-    }
-    
-    // Clean if requested
-    if (config->clean_build) {
-        LOG_INFO("Cleaning previous build artifacts...");
-        execute_command_safe("make mrproper", 1, &error_ctx);
-    }
-    
-    // Use defconfig
-    snprintf(cmd, sizeof(cmd), "make %s", config->defconfig);
-    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
-        LOG_WARNING("Failed to use specific defconfig, trying generic...");
-        if (execute_command_safe("make defconfig", 1, &error_ctx) != 0) {
-            LOG_ERROR("Failed to configure kernel");
-            return ERROR_KERNEL_CONFIG_FAILED;
-        }
-    }
-    
-    // Enable RK3588 and Mali GPU options
-    LOG_INFO("Enabling RK3588 and Mali GPU configurations...");
-    
-    const char *config_options[] = {
-        "CONFIG_ARCH_ROCKCHIP=y",
-        "CONFIG_ARM64=y",
-        "CONFIG_ROCKCHIP_RK3588=y",
-        "CONFIG_DRM_ROCKCHIP=y",
-        "CONFIG_DRM_PANFROST=y",
-        "CONFIG_MALI_MIDGARD=m",
-        "CONFIG_MALI_CSF_SUPPORT=y",
-        "CONFIG_DMA_CMA=y",
-        "CONFIG_CMA=y",
-        NULL
-    };
-    
-    FILE *config_file = fopen(".config", "a");
-    if (config_file) {
-        int i;
-        for (i = 0; config_options[i] != NULL; i++) {
-            fprintf(config_file, "%s\n", config_options[i]);
-        }
-        fclose(config_file);
-    }
-    
-    // Resolve dependencies
-    execute_command_safe("make olddefconfig", 1, &error_ctx);
-    
-    LOG_INFO("Kernel configured successfully");
-    return ERROR_SUCCESS;
-}
-
-// Build kernel
-int build_kernel(build_config_t *config) {
-    char cmd[MAX_CMD_LEN];
-    error_context_t error_ctx = {0};
-    
-    LOG_INFO("Building kernel with Mali GPU support (this may take a while)...");
-    
-    // Set environment variables
-    if (setenv("ARCH", config->arch, 1) != 0) {
-        LOG_WARNING("Failed to set ARCH environment variable");
-    }
-    if (setenv("CROSS_COMPILE", config->cross_compile, 1) != 0) {
-        LOG_WARNING("Failed to set CROSS_COMPILE environment variable");
-    }
-    
-    // Build kernel image
-    snprintf(cmd, sizeof(cmd), "make -j%d Image", config->jobs);
-    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
-        LOG_ERROR("Failed to build kernel image");
-        return ERROR_COMPILATION_FAILED;
-    }
-    
-    // Build device tree blobs
-    snprintf(cmd, sizeof(cmd), "make -j%d dtbs", config->jobs);
-    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
-        LOG_ERROR("Failed to build device tree blobs");
-        return ERROR_COMPILATION_FAILED;
-    }
-    
-    // Build modules
-    snprintf(cmd, sizeof(cmd), "make -j%d modules", config->jobs);
-    if (execute_command_safe(cmd, 1, &error_ctx) != 0) {
-        LOG_ERROR("Failed to build kernel modules");
-        return ERROR_COMPILATION_FAILED;
-    }
-    
-    LOG_INFO("Kernel built successfully");
-    return ERROR_SUCCESS;
-}
-
-// Cleanup build
-int cleanup_build(build_config_t *config) {
-    if (!config) {
-        return ERROR_UNKNOWN;
-    }
-    
-    LOG_INFO("Cleaning up build artifacts...");
-    
-    char cmd[MAX_CMD_LEN];
-    snprintf(cmd, sizeof(cmd), "rm -rf %s/* 2>/dev/null || true", config->build_dir);
-    execute_command_safe(cmd, 0, NULL);
-    
-    execute_command_safe("rm -rf /tmp/mali_install 2>/dev/null || true", 0, NULL);
-    
-    LOG_INFO("Cleanup completed");
-    return ERROR_SUCCESS;
-}
-
-// Stub functions for missing prototypes
-void show_build_options_menu(void) {
-    // Placeholder function
-}
-
-void show_advanced_menu(void) {
-    // Placeholder function  
-}
-
-void show_help_menu(void) {
-    // Placeholder function
-}
-
-int validate_config(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
-    return ERROR_SUCCESS;
-}
-
-int install_mali_drivers(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
-    return ERROR_SUCCESS;
-}
-
-int setup_opencl_support(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
-    return ERROR_SUCCESS;
-}
-
-int setup_vulkan_support(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
-    return ERROR_SUCCESS;
-}
-
-int install_kernel(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
-    return ERROR_SUCCESS;
-}
-
-int build_ubuntu_rootfs(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
-    return ERROR_SUCCESS;
-}
-
-int download_uboot_source(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
-    return ERROR_SUCCESS;
-}
-
-int build_uboot(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
-    return ERROR_SUCCESS;
-}
-
-int create_system_image(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
-    return ERROR_SUCCESS;
-}
-
-int install_system_packages(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
-    return ERROR_SUCCESS;
-}
-
-int configure_system_services(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
-    return ERROR_SUCCESS;
-}
-
-int verify_gpu_installation(void) {
-    // Placeholder function
-    return ERROR_SUCCESS;
-}
-
-int detect_current_ubuntu_release(build_config_t *config) {
-    // Placeholder function
-    if (!config) return ERROR_UNKNOWN;
     return ERROR_SUCCESS;
 }
 
