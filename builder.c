@@ -55,103 +55,10 @@ mali_driver_t mali_drivers[] = {
     }
 };
 
-// Create .env template file (builder.c version)
+// Create .env template file (builder.c version - wrapper)
 void create_env_template_builder(void) {
-    const char *env_file = ".env";
-    
-    // Check if .env already exists
-    if (access(env_file, F_OK) == 0) {
-        return;  // File already exists
-    }
-    
-    FILE *fp = fopen(env_file, "w");
-    if (fp) {
-        fprintf(fp, "# Environment variables for Orange Pi 5 Plus Builder\n");
-        fprintf(fp, "# Copy this file to .env and fill in your values\n\n");
-        fprintf(fp, "# GitHub personal access token for downloading from private/rate-limited repos\n");
-        fprintf(fp, "# Create one at: https://github.com/settings/tokens\n");
-        fprintf(fp, "# GITHUB_TOKEN=ghp_your_token_here\n\n");
-        fprintf(fp, "# Custom Mali driver URLs (optional)\n");
-        fprintf(fp, "# MALI_DRIVER_URL=https://your-mirror.com/mali-driver.so\n");
-        fprintf(fp, "# MALI_FIRMWARE_URL=https://your-mirror.com/mali-firmware.bin\n\n");
-        fprintf(fp, "# Build options\n");
-        fprintf(fp, "# BUILD_JOBS=8\n");
-        fprintf(fp, "# OUTPUT_DIR=/custom/output/path\n");
-        fclose(fp);
-        
-        LOG_INFO("Created .env template file. Please edit it with your settings.");
-    }
-}
-
-// Get GitHub token from environment or .env file (builder.c version)
-char* get_github_token(void) {
-    static char token[256] = {0};
-    
-    // First check environment variable
-    char *env_token = getenv("GITHUB_TOKEN");
-    if (env_token && strlen(env_token) > 0) {
-        strncpy(token, env_token, sizeof(token) - 1);
-        token[sizeof(token) - 1] = '\0';
-        return token;
-    }
-    
-    // Try to read from .env file
-    FILE *fp = fopen(".env", "r");
-    if (fp) {
-        char line[512];
-        while (fgets(line, sizeof(line), fp)) {
-            // Skip comments and empty lines
-            if (line[0] == '#' || line[0] == '\n') continue;
-            
-            // Look for GITHUB_TOKEN=
-            if (strncmp(line, "GITHUB_TOKEN=", 13) == 0) {
-                char *value = line + 13;
-                // Remove trailing newline
-                char *nl = strchr(value, '\n');
-                if (nl) *nl = '\0';
-                // Remove quotes if present
-                if (value[0] == '"' || value[0] == '\'') {
-                    value++;
-                    int len = strlen(value);
-                    if (len > 0 && (value[len-1] == '"' || value[len-1] == '\'')) {
-                        value[len-1] = '\0';
-                    }
-                }
-                if (strlen(value) < sizeof(token)) {
-                    strncpy(token, value, sizeof(token) - 1);
-                    token[sizeof(token) - 1] = '\0';
-                }
-                fclose(fp);
-                return token;
-            }
-        }
-        fclose(fp);
-    }
-    
-    return NULL;
-}
-
-// Add GitHub token to URL if available
-char* add_github_token_to_url(const char *url) {
-    static char auth_url[1024];
-    char *token = get_github_token();
-    
-    strncpy(auth_url, url, sizeof(auth_url) - 1);
-    auth_url[sizeof(auth_url) - 1] = '\0';
-    
-    if (token && strlen(token) > 0 && strstr(url, "github.com")) {
-        // For raw GitHub URLs
-        if (strstr(url, "raw.githubusercontent.com")) {
-            snprintf(auth_url, sizeof(auth_url), "%s?token=%s", url, token);
-        }
-        // For API URLs
-        else if (strstr(url, "api.github.com")) {
-            snprintf(auth_url, sizeof(auth_url), "%s%ctoken=%s", url, 
-                     strchr(url, '?') ? '&' : '?', token);
-        }
-    }
-    
-    return auth_url;
+    // Just call the system.c version
+    create_env_template();
 }
 
 // Initialize build configuration
@@ -837,6 +744,13 @@ int main(int argc, char *argv[]) {
     init_build_config(&config);
     global_config = &config;
     
+	char* test_token = get_github_token();
+if (test_token != NULL && strlen(test_token) > 0) {
+    printf("[DEBUG] GitHub token loaded: %c***%c (length: %zu)\n", 
+           test_token[0], test_token[strlen(test_token)-1], strlen(test_token));
+} else {
+    printf("[DEBUG] No GitHub token found!\n");
+}
     // Process command line arguments
     process_args(argc, argv, &config);
     
